@@ -7,7 +7,7 @@ account resource in the Terraform provider XSOAR.
 
 # Resource `account`
 
-account resource in the Terraform provider XSOAR.
+Account resource in the Terraform provider XSOAR.
 
 ## Example Usage
 
@@ -16,14 +16,14 @@ resource "account" "example" {
   name               = "foo"
   host_group_name    = "server-name"
   propagation_labels = ["a", "b"]
-  roles              = ["Administrator"]
+  account_roles      = ["Administrator"]
 }
 ```
 
 ## Schema
+- **name** (String) Name of the account
+- **propagation_labels** (List) List of propagation labels applied to the account
+- **account_roles** (List) List of user roles applied to the account
 
 ### Optional
-
-- **id** (String, Optional) The ID of this resource.
-- **sample_attribute** (String, Optional) Sample attribute.
-
+- **host_group_name** (String) Name of the HA group to which this belongs

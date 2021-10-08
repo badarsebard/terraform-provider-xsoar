@@ -27,28 +27,28 @@ Vagrant.configure("2") do |config|
     main.vm.provision "shell", path: ".run/provision_main.sh"
   end
 
-  config.vm.define "host1" do |host|
-    host.vm.box = "ubuntu/focal64"
-    host.vm.hostname = "host1.xsoar.local"
-    host.vm.provider "virtualbox" do |v|
-     v.memory = 2048
-     v.cpus = 1
-    end
-    host.vm.provision :hosts, :sync_hosts => true
-    host.vm.network "private_network", ip: "192.168.33.11"
-  end
-
-  config.vm.define "host2" do |host|
-    host.vm.box = "ubuntu/focal64"
-    host.vm.hostname = "host2.xsoar.local"
-    host.vm.provider "virtualbox" do |v|
-      v.memory = 2048
-      v.cpus = 1
-    end
-    host.vm.provision :hosts, :sync_hosts => true
-    host.vm.network "private_network", ip: "192.168.33.12"
-  end
-
+#   config.vm.define "host1" do |host|
+#     host.vm.box = "ubuntu/focal64"
+#     host.vm.hostname = "host1.xsoar.local"
+#     host.vm.provider "virtualbox" do |v|
+#      v.memory = 2048
+#      v.cpus = 1
+#     end
+#     host.vm.provision :hosts, :sync_hosts => true
+#     host.vm.network "private_network", ip: "192.168.33.11"
+#   end
+#
+#   config.vm.define "host2" do |host|
+#     host.vm.box = "ubuntu/focal64"
+#     host.vm.hostname = "host2.xsoar.local"
+#     host.vm.provider "virtualbox" do |v|
+#       v.memory = 2048
+#       v.cpus = 1
+#     end
+#     host.vm.provision :hosts, :sync_hosts => true
+#     host.vm.network "private_network", ip: "192.168.33.12"
+#   end
+#
 #   config.vm.define "host3" do |host|
 #     host.vm.box = "ubuntu/focal64"
 #     host.vm.hostname = "host3.xsoar.local"
@@ -57,7 +57,7 @@ Vagrant.configure("2") do |config|
 #       v.cpus = 1
 #     end
 #     host.vm.provision :hosts, :sync_hosts => true
-#     host.vm.network "private_network", ip: "192.168.33.14"
+#     host.vm.network "private_network", ip: "192.168.33.13"
 #   end
 
 end

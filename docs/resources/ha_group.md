@@ -7,10 +7,9 @@ ha_group resource in the Terraform provider XSOAR.
 
 # Resource `ha_group`
 
-ha_group resource in the Terraform provider XSOAR.
+HA group resource in the Terraform provider XSOAR.
 
 ## Example Usage
-
 ```terraform
 resource "ha_group" "example" {
   ha_group_name = "foo"
@@ -21,7 +20,7 @@ resource "ha_group" "example" {
 
 ## Schema
 - **ha_group_name** (string) Name of the HA group
-- **elastic_cluster_url** (string:url) URL location of Elasticsearch cluster, including scheme and port
-- **elastic_index_prefix** (string) string prefix for ha group indexes, cannot be empty 
 
 ### Optional
+- **elastic_cluster_url** (String, Optional) URL location of Elasticsearch cluster, including scheme and port
+- **elastic_index_prefix** (String, Optional) string prefix for ha group indexes, cannot be empty 

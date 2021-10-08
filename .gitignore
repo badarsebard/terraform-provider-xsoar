@@ -37,3 +37,6 @@ website/vendor
 
 # exclude local files
 local
+
+# exclude python virtual environments
+venv

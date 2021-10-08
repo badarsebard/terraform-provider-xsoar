@@ -7,15 +7,32 @@ host resource in the Terraform provider XSOAR.
 
 # Resource `host`
 
-host resource in the Terraform provider XSOAR.
+Host resource in the Terraform provider XSOAR.
 
 ## Example Usage
 
 ```terraform
-resource "host" "example" {}
+resource "host" "example" {
+  name = "foobar"
+  server_url = "hostname.bar:22"
+  ssh_user = "sshuser"
+  ssh_key_file = "/home/sshuser/.ssh/id_rsa"
+}
+
+resource "xsoar_host" "es_example" {
+  name = "foobar"
+  elasticsearch_url = "http://elastic.foo:9200"
+  server_url = "hostname.bar:22"
+  ssh_user = "sshuser"
+  ssh_key_file = "/home/sshuser/.ssh/id_rsa"
+}
 
 resource "host" "ha_example" {
+  name = "hostname"
   ha_group_name = "foo"
+  server_url = "hostname.foo:22"
+  ssh_user = "sshuser"
+  ssh_key_file = "/home/sshuser/.ssh/id_rsa"
 }
 
 resource "ha_group" "ha_group_example" {
@@ -26,8 +43,12 @@ resource "ha_group" "ha_group_example" {
 ```
 
 ## Schema
+- **name** (String) Name of the host, will be used as XSOAR "external address"
+- **server_url** (String) URL and port of the host for an SSH connection
+- **ssh_user** (String) Username for the SSH connection
+- **ssh_key_file** (String) Path to the SSH private key
 
 ### Optional
 - **ha_group_name** (String, Optional) The name of the HA group this host belongs to.
-
+- **elasticsearch_url** (String, Optional) The URL with scheme and port of the elasticsearch cluster
 

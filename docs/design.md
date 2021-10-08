@@ -31,3 +31,35 @@ Group of hosts that provide redundancy to each other.
 
 ## Integration Instance
 Instance of an integration within an account that is configured.
+
+### Approximate Approach
+- POST to `/settings/integration/search`
+- grab the `configurations` key
+- search for the config that matches the name of the integration
+- grab `configuration` array from returned object
+```python
+module_configuration = configuration["configuration"]
+```
+- create base module instance config
+```python
+module_instance = {
+    'brand': configuration['name'],
+    'category': configuration['category'],
+    'configuration': configuration,
+    'data': [],
+    'enabled': "true",
+    'engine': '',
+    'id': '',
+    'isIntegrationScript': is_byoi,
+    'name': instance_name,
+    'passwordProtected': False,
+    'version': 0
+}
+```
+- iterate through the module configuration options
+- parse keys and values of config and add the values to the `module_instance`
+- assign defaults as needed
+- append the parameter to the `module_instance['data']` array
+- send `module_instance` to `/settings/integration` as a PUT request
+
+# License Requirements

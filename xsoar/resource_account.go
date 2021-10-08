@@ -28,6 +28,7 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 			"host_group_id": {
 				Type:     types.StringType,
 				Computed: true,
+				Optional: false,
 			},
 			"name": {
 				Type:          types.StringType,

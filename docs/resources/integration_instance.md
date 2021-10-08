@@ -7,13 +7,19 @@ integration_instance resource in the Terraform provider XSOAR.
 
 # Resource `integration_instance`
 
-integration_instance resource in the Terraform provider XSOAR.
+Integration instance resource in the Terraform provider XSOAR.
 
 ## Example Usage
 
 ```terraform
 resource "integration_instance" "example" {
-  sample_attribute = "foo"
+  name               = "foo"
+  integration_name   = "bar"
+  propagation_labels = ["all"]
+  account            = "Foo Inc."
+  config = {
+    key: "value"
+  }
 }
 ```
 

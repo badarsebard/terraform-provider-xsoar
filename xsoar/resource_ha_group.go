@@ -22,6 +22,7 @@ func (r resourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 			"id": {
 				Type:     types.StringType,
 				Computed: true,
+				Optional: false,
 			},
 			"elasticsearch_url": {
 				Type:          types.StringType,
@@ -33,6 +34,7 @@ func (r resourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				Required:      true,
 				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
 			},
+			// todo: add missing ES parameters
 		},
 	}, nil
 }

@@ -9,3 +9,4 @@ network.host: 0.0.0.0
 discovery.type: single-node
 EOF
 sudo systemctl start elasticsearch
+sudo systemctl enable elasticsearch
