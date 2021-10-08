@@ -13,17 +13,21 @@ provider "xsoar" {
   insecure  = true
 }
 
-resource "xsoar_integration_instance" "test" {
-  name               = "threatcentral_instance_1"
-  integration_name   = "threatcentral"
-  propagation_labels = ["all", "fml"]
-  account            = "fml"
-  config = {
-    APIAddress : "https://threatcentral.io/tc/rest/summaries"
-    APIKey : "123na"
-    useproxy : "true"
-  }
+data "xsoar_account" "test" {
+  name = "fml"
 }
+
+#resource "xsoar_integration_instance" "test" {
+#  name               = "threatcentral_instance_1"
+#  integration_name   = "threatcentral"
+#  propagation_labels = ["all", "fml"]
+#  account            = "fml"
+#  config = {
+#    APIAddress : "https://threatcentral.io/tc/rest/summaries"
+#    APIKey : "123na"
+#    useproxy : "true"
+#  }
+#}
 
 #resource "xsoar_account" "test" {
 #  name               = "acc1"

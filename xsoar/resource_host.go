@@ -106,7 +106,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	// 1) Trigger or confirm the build of the host installer
 	var haGroupId string
 	if isHA {
-		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error listing HA groups",
@@ -119,7 +119,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				haGroupId = group["id"].(string)
 			}
 		}
-		_, _, err = r.p.client.DefaultApi.CreateHAInstaller(context.Background(), haGroupId).Execute()
+		_, _, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating HA installer",
@@ -128,7 +128,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			return
 		}
 	} else {
-		_, _, err := r.p.client.DefaultApi.CreateHostInstaller(context.Background()).Execute()
+		_, _, err := r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating host installer",
@@ -142,7 +142,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	var installer *os.File
 	var err error
 	if isHA {
-		installer, _, err = r.p.client.DefaultApi.GetHAInstaller(context.Background(), haGroupId).Execute()
+		installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error downloading HA installer",
@@ -151,7 +151,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			return
 		}
 	} else {
-		installer, _, err = r.p.client.DefaultApi.GetHostInstaller(context.Background()).Execute()
+		installer, _, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error downloading host installer",
@@ -254,7 +254,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
 		for host == nil {
-			host, _, err = r.p.client.DefaultApi.GetHost(context.Background(), plan.Name.Value).Execute()
+			host, _, err = r.p.client.DefaultApi.GetHost(ctx, plan.Name.Value).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Error listing HA groups",
@@ -288,7 +288,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 	if isHA {
 		var haGroup openapi.CreateUpdateHAGroup
-		haGroup, _, err = r.p.client.DefaultApi.GetHAGroup(context.Background(), haGroupId).Execute()
+		haGroup, _, err = r.p.client.DefaultApi.GetHAGroup(ctx, haGroupId).Execute()
 		result.HAGroupName.Value = haGroup.GetName()
 	}
 	if isElastic {
@@ -325,7 +325,7 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
 		for host == nil {
-			host, _, err = r.p.client.DefaultApi.GetHost(context.Background(), state.Name.Value).Execute()
+			host, _, err = r.p.client.DefaultApi.GetHost(ctx, state.Name.Value).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Error listing HA groups",
@@ -359,7 +359,7 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 	}
 
 	haGroupId := host["hostGroupId"].(string)
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(context.Background(), haGroupId).Execute()
+	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, haGroupId).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
@@ -451,7 +451,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	// 1) Trigger or confirm the build of the host installer
 	var haGroupId string
 	if isHA {
-		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error listing HA groups",
@@ -464,7 +464,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 				haGroupId = group["id"].(string)
 			}
 		}
-		_, _, err = r.p.client.DefaultApi.CreateHAInstaller(context.Background(), haGroupId).Execute()
+		_, _, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating HA installer",
@@ -473,7 +473,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 			return
 		}
 	} else {
-		_, _, err := r.p.client.DefaultApi.CreateHostInstaller(context.Background()).Execute()
+		_, _, err := r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating host installer",
@@ -487,7 +487,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	var installer *os.File
 	var err error
 	if isHA {
-		installer, _, err = r.p.client.DefaultApi.GetHAInstaller(context.Background(), haGroupId).Execute()
+		installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error downloading HA installer",
@@ -496,7 +496,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 			return
 		}
 	} else {
-		installer, _, err = r.p.client.DefaultApi.GetHostInstaller(context.Background()).Execute()
+		installer, _, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error downloading host installer",
@@ -586,7 +586,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	}
 
 	// Delete host from main
-	_, _, err = r.p.client.DefaultApi.DeleteHost(context.Background(), state.Id.Value).Execute()
+	_, _, err = r.p.client.DefaultApi.DeleteHost(ctx, state.Id.Value).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting host",
@@ -608,7 +608,7 @@ func (r resourceHost) ImportState(ctx context.Context, req tfsdk.ImportResourceS
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
 		for host == nil {
-			host, _, err = r.p.client.DefaultApi.GetHost(context.Background(), name).Execute()
+			host, _, err = r.p.client.DefaultApi.GetHost(ctx, name).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Error listing HA groups",
@@ -635,7 +635,7 @@ func (r resourceHost) ImportState(ctx context.Context, req tfsdk.ImportResourceS
 	var hostId = host["id"].(string)
 	var hostGroupId = host["hostGroupId"].(string)
 
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(context.Background(), hostGroupId).Execute()
+	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	var haGroupName = haGroup.GetName()
 
 	// Map response body to resource schema attribute

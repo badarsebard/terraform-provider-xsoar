@@ -75,7 +75,7 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	createHAGroupRequest.SetElasticsearchAddress(plan.ElasticsearchUrl.Value)
 
 	// Create new HA group
-	haGroup, _, err := r.p.client.DefaultApi.CreateHAGroup(context.Background()).CreateHAGroupRequest(createHAGroupRequest).Execute()
+	haGroup, _, err := r.p.client.DefaultApi.CreateHAGroup(ctx).CreateHAGroupRequest(createHAGroupRequest).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating HA group",
@@ -112,7 +112,7 @@ func (r resourceHAGroup) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 	}
 
 	// Get HA group from API and then update what is in state from what the API returns
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(context.Background(), state.Id.Value).Execute()
+	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, state.Id.Value).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
@@ -161,7 +161,7 @@ func (r resourceHAGroup) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	updateHAGroupRequest.SetName(plan.Name.Value)
 	updateHAGroupRequest.SetElasticsearchAddress(plan.ElasticsearchUrl.Value)
 	updateHAGroupRequest.SetElasticIndexPrefix(plan.ElasticIndexPrefix.Value)
-	haGroup, _, err := r.p.client.DefaultApi.CreateHAGroup(context.Background()).CreateHAGroupRequest(updateHAGroupRequest).Execute()
+	haGroup, _, err := r.p.client.DefaultApi.CreateHAGroup(ctx).CreateHAGroupRequest(updateHAGroupRequest).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating HA group",
@@ -196,7 +196,7 @@ func (r resourceHAGroup) Delete(ctx context.Context, req tfsdk.DeleteResourceReq
 	}
 
 	// Delete HA group by calling API
-	_, _, err := r.p.client.DefaultApi.DeleteHAGroup(context.Background(), state.Id.Value).Execute()
+	_, _, err := r.p.client.DefaultApi.DeleteHAGroup(ctx, state.Id.Value).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting HA group",
@@ -213,7 +213,7 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 	var diags diag.Diagnostics
 	name := req.ID
 	// Get HA group current value
-	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing HA groups",
@@ -228,7 +228,7 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 			break
 		}
 	}
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(context.Background(), id).Execute()
+	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, id).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting HA group",

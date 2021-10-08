@@ -77,7 +77,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	// Generate API request body from plan
 	createAccountRequest := *openapi.NewCreateAccountRequest()
 	createAccountRequest.SetAccountRoles(plan.AccountRoles)
-	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing HA groups",
@@ -98,7 +98,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	createAccountRequest.SetSyncOnCreation(true)
 
 	// Create new account
-	accounts, _, err := r.p.client.DefaultApi.CreateAccount(context.Background()).CreateAccountRequest(createAccountRequest).Execute()
+	accounts, _, err := r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error reading order",
@@ -155,7 +155,7 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 	accName := "acc_" + state.Name.Value
 
 	// Get account current value
-	account, _, err := r.p.client.DefaultApi.GetAccount(context.Background(), accName).Execute()
+	account, _, err := r.p.client.DefaultApi.GetAccount(ctx, accName).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting account",
@@ -169,7 +169,7 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		propagationLabels = append(propagationLabels, prop.(string))
 	}
 
-	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(context.Background()).Execute()
+	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing account details",
@@ -188,7 +188,7 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 			}
 		}
 	}
-	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing HA groups",
@@ -245,7 +245,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		updateRolesAndPropagationLabelsRequest := *openapi.NewUpdateRolesAndPropagationLabelsRequest()
 		updateRolesAndPropagationLabelsRequest.SetSelectedRoles(plan.AccountRoles)
 		updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(plan.PropagationLabels)
-		_, _, err := r.p.client.DefaultApi.UpdateAccount(context.Background(), plan.Name.Value).UpdateRolesAndPropagationLabelsRequest(updateRolesAndPropagationLabelsRequest).Execute()
+		_, _, err := r.p.client.DefaultApi.UpdateAccount(ctx, plan.Name.Value).UpdateRolesAndPropagationLabelsRequest(updateRolesAndPropagationLabelsRequest).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error update account",
@@ -258,7 +258,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	// Host
 	// todo: implement after updating sdk with account host migration capability
 	if plan.HostGroupName.Value != state.HostGroupName.Value {
-		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error listing HA groups",
@@ -273,7 +273,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 				break
 			}
 		}
-		_, _, err = r.p.client.DefaultApi.UpdateAccountHost(context.Background(), "acc_"+plan.Name.Value, targetHostGroupId).Execute()
+		_, _, err = r.p.client.DefaultApi.UpdateAccountHost(ctx, "acc_"+plan.Name.Value, targetHostGroupId).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error updating account host",
@@ -287,7 +287,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	accName := "acc_" + state.Name.Value
 
 	// Get account current value
-	account, _, err := r.p.client.DefaultApi.GetAccount(context.Background(), accName).Execute()
+	account, _, err := r.p.client.DefaultApi.GetAccount(ctx, accName).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting account",
@@ -301,7 +301,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		propagationLabels = append(propagationLabels, prop.(string))
 	}
 
-	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(context.Background()).Execute()
+	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing account details",
@@ -320,7 +320,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 			}
 		}
 	}
-	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing HA groups",
@@ -365,7 +365,7 @@ func (r resourceAccount) Delete(ctx context.Context, req tfsdk.DeleteResourceReq
 	accName := "acc_" + state.Name.Value
 
 	// Delete order by calling API
-	_, _, err := r.p.client.DefaultApi.DeleteAccount(context.Background(), accName).Execute()
+	_, _, err := r.p.client.DefaultApi.DeleteAccount(ctx, accName).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting account",
@@ -382,7 +382,7 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 	var diags diag.Diagnostics
 	accName := "acc_" + req.ID
 	// Get account current value
-	account, _, err := r.p.client.DefaultApi.GetAccount(context.Background(), accName).Execute()
+	account, _, err := r.p.client.DefaultApi.GetAccount(ctx, accName).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting account",
@@ -396,7 +396,7 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 		propagationLabels = append(propagationLabels, prop.(string))
 	}
 
-	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(context.Background()).Execute()
+	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing account details",
@@ -415,7 +415,7 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 			}
 		}
 	}
-	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(context.Background()).Execute()
+	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing HA groups",

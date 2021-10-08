@@ -80,7 +80,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	// list integrations
 	size := *openapi.NewInlineObject1()
 	size.SetSize(500)
-	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(context.Background()).Size(size).Execute()
+	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(ctx).Size(size).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing integration",
@@ -123,7 +123,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		param["hasvalue"] = false
 		for configName, configValue := range plan.Config.Elems {
 			if param["display"].(string) == configName || param["name"].(string) == configName {
-				param["value"], _ = configValue.ToTerraformValue(context.Background())
+				param["value"], _ = configValue.ToTerraformValue(ctx)
 				param["hasvalue"] = true
 				break
 			}
@@ -136,7 +136,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 
 	var integrationsResponse map[string]interface{}
 	if plan.Account.Null || len(plan.Account.Value) == 0 {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(context.Background()).CreateIntegrationRequest(moduleInstance).Execute()
+		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
@@ -145,7 +145,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			return
 		}
 	} else {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(context.Background(), "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
+		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
@@ -191,7 +191,7 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 	var integrationInstance map[string]interface{}
 	var err error
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstance(context.Background()).Identifier(state.Id.Value).Execute()
+		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).Identifier(state.Id.Value).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error getting integration instance",
@@ -200,7 +200,7 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 			return
 		}
 	} else {
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(context.Background(), "acc_"+state.Account.Value).Identifier(state.Id.Value).Execute()
+		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+state.Account.Value).Identifier(state.Id.Value).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error getting integration instance",
@@ -254,7 +254,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 	// list integrations
 	size := *openapi.NewInlineObject1()
 	size.SetSize(500)
-	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(context.Background()).Size(size).Execute()
+	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(ctx).Size(size).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing integration",
@@ -297,7 +297,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		param["hasvalue"] = false
 		for configName, configValue := range plan.Config.Elems {
 			if param["display"].(string) == configName || param["name"].(string) == configName {
-				param["value"], _ = configValue.ToTerraformValue(context.Background())
+				param["value"], _ = configValue.ToTerraformValue(ctx)
 				param["hasvalue"] = true
 				break
 			}
@@ -309,7 +309,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 	}
 	var integrationsResponse map[string]interface{}
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(context.Background()).CreateIntegrationRequest(moduleInstance).Execute()
+		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
@@ -318,7 +318,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 			return
 		}
 	} else {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(context.Background(), "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
+		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
@@ -362,7 +362,7 @@ func (r resourceIntegrationInstance) Delete(ctx context.Context, req tfsdk.Delet
 
 	// Delete
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		_, err := r.p.client.DefaultApi.DeleteIntegrationInstance(context.Background(), state.Id.Value).Execute()
+		_, err := r.p.client.DefaultApi.DeleteIntegrationInstance(ctx, state.Id.Value).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
@@ -371,7 +371,7 @@ func (r resourceIntegrationInstance) Delete(ctx context.Context, req tfsdk.Delet
 			return
 		}
 	} else {
-		_, err := r.p.client.DefaultApi.DeleteIntegrationInstanceAccount(context.Background(), state.Id.Value, "acc_"+state.Account.Value).Execute()
+		_, err := r.p.client.DefaultApi.DeleteIntegrationInstanceAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
@@ -393,7 +393,7 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 	var err error
 	if len(accname) == 1 {
 		name = req.ID
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstance(context.Background()).Identifier(name).Execute()
+		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).Identifier(name).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error getting integration instance",
@@ -410,7 +410,7 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		}
 	} else {
 		acc, name = accname[0], accname[1]
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(context.Background(), "acc_"+acc).Identifier(name).Execute()
+		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+acc).Identifier(name).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error getting integration instance",

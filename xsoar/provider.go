@@ -142,9 +142,9 @@ func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceTyp
 // GetDataSources - Defines provider data sources
 func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
 	return map[string]tfsdk.DataSourceType{
-		//"xsoar_account": dataSourceAccountType{},
-		//"xsoar_ha_group": dataSourceHAGroupType{},
-		//"xsoar_host": dataSourceHostType{},
-		//"xsoar_integration_instance": dataSourceIntegrationInstanceType{},
+		"xsoar_account":              dataSourceAccountType{},
+		"xsoar_ha_group":             dataSourceHAGroupType{},
+		"xsoar_host":                 dataSourceHostType{},
+		"xsoar_integration_instance": dataSourceIntegrationInstanceType{},
 	}, nil
 }
