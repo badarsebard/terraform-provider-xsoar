@@ -29,11 +29,11 @@ func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics)
 		Attributes: map[string]tfsdk.Attribute{
 			"main_host": {
 				Type:     types.StringType,
-				Required: true,
+				Optional: true,
 			},
 			"api_key": {
 				Type:     types.StringType,
-				Required: true,
+				Optional: true,
 			},
 			"insecure": {
 				Type:     types.BoolType,
@@ -111,12 +111,19 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
+	var insecure bool
+	if config.Insecure.Value || len(os.Getenv("DEMISTO_INSECURE")) > 0 {
+		insecure = true
+	} else {
+		insecure = false
+	}
+
 	// Create a new xsoar client and set it to the provider client
 	openapiConfig := openapi.NewConfiguration()
 	openapiConfig.Servers[0].URL = mainhost
 	openapiConfig.AddDefaultHeader("Authorization", apikey)
 	openapiConfig.AddDefaultHeader("Accept", "application/json,*/*")
-	if config.Insecure.Value {
+	if insecure {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}

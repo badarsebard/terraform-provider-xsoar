@@ -2,7 +2,6 @@ package xsoar
 
 import (
 	"context"
-	"github.com/badarsebard/xsoar-sdk-go/openapi"
 	"github.com/bramvdbogaerde/go-scp"
 	"github.com/bramvdbogaerde/go-scp/auth"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -280,23 +279,39 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	// Map response body to resource schema attribute
 	var hostName = host["host"].(string)
 	var hostId = host["id"].(string)
+	var hostGroupId = host["hostGroupId"].(string)
 
+	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error getting HA group",
+			"Could not get HA group: "+err.Error(),
+		)
+		return
+	}
+
+	// Map response body to resource schema attribute
 	var result Host
 	result = Host{
 		Name: types.String{Value: hostName},
 		Id:   types.String{Value: hostId},
 	}
-	if isHA {
-		var haGroup openapi.CreateUpdateHAGroup
-		haGroup, _, err = r.p.client.DefaultApi.GetHAGroup(ctx, haGroupId).Execute()
+
+	if host["host"].(string) != haGroup.GetName() {
+		isHA = true
 		result.HAGroupName.Value = haGroup.GetName()
+	} else {
+		result.HAGroupName.Null = true
 	}
-	if isElastic {
-		var elasticsearchAddress string
-		elasticsearchAddress = host["elasticsearchAddress"].(string)
-		if !isHA || (!isHA && len(plan.ElasticsearchUrl.Value) > 0) {
-			result.ElasticsearchUrl.Value = elasticsearchAddress
+
+	if len(host["elasticsearchAddress"].(string)) > 0 {
+		if isHA {
+			result.ElasticsearchUrl.Null = true
+		} else {
+			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
 		}
+	} else {
+		result.ElasticsearchUrl.Null = true
 	}
 	result.ServerUrl = plan.ServerUrl
 	result.SSHUser = plan.SSHUser
@@ -351,15 +366,9 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 	// Map response body to resource schema attribute
 	var hostName = host["host"].(string)
 	var hostId = host["id"].(string)
+	var hostGroupId = host["hostGroupId"].(string)
 
-	var result Host
-	result = Host{
-		Name: types.String{Value: hostName},
-		Id:   types.String{Value: hostId},
-	}
-
-	haGroupId := host["hostGroupId"].(string)
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, haGroupId).Execute()
+	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
@@ -368,24 +377,29 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 		return
 	}
 
+	// Map response body to resource schema attribute
+	var result Host
+	result = Host{
+		Name: types.String{Value: hostName},
+		Id:   types.String{Value: hostId},
+	}
+
 	var isHA = false
 	if host["host"].(string) != haGroup.GetName() {
 		isHA = true
-	}
-	if isHA {
 		result.HAGroupName.Value = haGroup.GetName()
+	} else {
+		result.HAGroupName.Null = true
 	}
 
-	var isElastic = false
 	if len(host["elasticsearchAddress"].(string)) > 0 {
-		isElastic = true
-	}
-	if isElastic {
-		var elasticsearchAddress string
-		elasticsearchAddress = host["elasticsearchAddress"].(string)
-		if !isHA || (!isHA && len(state.ElasticsearchUrl.Value) > 0) {
-			result.ElasticsearchUrl.Value = elasticsearchAddress
+		if isHA {
+			result.ElasticsearchUrl.Null = true
+		} else {
+			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
 		}
+	} else {
+		result.ElasticsearchUrl.Null = true
 	}
 
 	result.ServerUrl = state.ServerUrl
@@ -611,8 +625,8 @@ func (r resourceHost) ImportState(ctx context.Context, req tfsdk.ImportResourceS
 			host, _, err = r.p.client.DefaultApi.GetHost(ctx, name).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
-					"Error listing HA groups",
-					"Could not list HA groups: "+err.Error(),
+					"Error getting host",
+					"Could not get host: "+err.Error(),
 				)
 				return
 			}
@@ -636,7 +650,13 @@ func (r resourceHost) ImportState(ctx context.Context, req tfsdk.ImportResourceS
 	var hostGroupId = host["hostGroupId"].(string)
 
 	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
-	var haGroupName = haGroup.GetName()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error getting HA group",
+			"Could not get HA group: "+err.Error(),
+		)
+		return
+	}
 
 	// Map response body to resource schema attribute
 	var result Host
@@ -645,10 +665,22 @@ func (r resourceHost) ImportState(ctx context.Context, req tfsdk.ImportResourceS
 		Id:   types.String{Value: hostId},
 	}
 
-	if haGroupName != hostName {
-		result.HAGroupName = types.String{Value: haGroupName}
+	var isHA = false
+	if host["host"].(string) != haGroup.GetName() {
+		isHA = true
+		result.HAGroupName.Value = haGroup.GetName()
 	} else {
-		result.ElasticsearchUrl = types.String{Value: host["elasticsearchAddress"].(string)}
+		result.HAGroupName.Null = true
+	}
+
+	if len(host["elasticsearchAddress"].(string)) > 0 {
+		if isHA {
+			result.ElasticsearchUrl.Null = true
+		} else {
+			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
+		}
+	} else {
+		result.ElasticsearchUrl.Null = true
 	}
 
 	// Generate resource state struct

@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test ACC" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+    <makefile filename="$PROJECT_DIR$/Makefile" target="testacc" workingDirectory="" arguments="">
+      <envs>
+        <env name="DEMISTO_BASE_URL" value="https://main.xsoar.local" />
+        <env name="DEMISTO_API_KEY" value="6ADCA625D00D6FC10F05B8BCFD4BC34C" />
+        <env name="DEMISTO_INSECURE" value="1" />
+        <env name="DEMISTO_HOST_KEYFILE" value="$PROJECT_DIR$/.vagrant/machines/host1/virtualbox/private_key" />
+        <env name="DEMISTO_HOST" value="host1.xsoar.local" />
+      </envs>
+    </makefile>
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Make" run_configuration_type="MAKEFILE_TARGET_RUN_CONFIGURATION" />
+    </method>
+  </configuration>
+</component>

@@ -13,40 +13,36 @@ provider "xsoar" {
   insecure  = true
 }
 
-data "xsoar_account" "test" {
-  name = "fml"
+resource "xsoar_integration_instance" "threatcentral1" {
+  name               = "threatcentral_instance_1"
+  integration_name   = "threatcentral"
+  propagation_labels = ["all"]
+  account            = xsoar_account.acc1.name
+  config = {
+    APIAddress : "https://threatcentral.io/tc/rest/summaries"
+    APIKey : "123na"
+    useproxy : "true"
+  }
 }
 
-#resource "xsoar_integration_instance" "test" {
-#  name               = "threatcentral_instance_1"
-#  integration_name   = "threatcentral"
-#  propagation_labels = ["all", "fml"]
-#  account            = "fml"
-#  config = {
-#    APIAddress : "https://threatcentral.io/tc/rest/summaries"
-#    APIKey : "123na"
-#    useproxy : "true"
-#  }
-#}
+resource "xsoar_account" "acc1" {
+  name               = "acc1"
+  host_group_name    = xsoar_ha_group.ha1.name
+  account_roles      = ["Administrator"]
+  propagation_labels = [""]
+  depends_on         = [xsoar_host.test]
+}
 
-#resource "xsoar_account" "test" {
-#  name               = "acc1"
-#  host_group_name    = xsoar_ha_group.test.name
-#  account_roles      = ["Administrator"]
-#  propagation_labels = [""]
-#  depends_on         = [xsoar_host.test]
-#}
+resource "xsoar_host" "host1" {
+  name          = "host1.xsoar.local"
+  ha_group_name = xsoar_ha_group.ha1.name
+  server_url    = "host1.xsoar.local:22"
+  ssh_user      = "vagrant"
+  ssh_key_file  = "/path/to/file"
+}
 
-#resource "xsoar_host" "test" {
-#  name          = "host1.xsoar.local"
-#  server_url    = "host1.xsoar.local:22"
-#  ha_group_name = xsoar_ha_group.test.name
-#  ssh_user      = "vagrant"
-#  ssh_key_file  = "/path/to/file"
-#}
-
-#resource "xsoar_ha_group" "test" {
-#  name                 = "ha_1"
-#  elasticsearch_url    = "http://elastic.xsoar.local:9200"
-#  elastic_index_prefix = "ha_1_"
-#}
+resource "xsoar_ha_group" "ha1" {
+  name                 = "ha_1"
+  elasticsearch_url    = "http://elastic.xsoar.local:9200"
+  elastic_index_prefix = "ha_1_"
+}

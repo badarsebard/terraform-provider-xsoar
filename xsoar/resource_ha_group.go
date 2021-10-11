@@ -22,7 +22,6 @@ func (r resourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 			"id": {
 				Type:     types.StringType,
 				Computed: true,
-				Optional: false,
 			},
 			"elasticsearch_url": {
 				Type:          types.StringType,

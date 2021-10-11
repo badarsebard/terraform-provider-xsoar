@@ -41,6 +41,10 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				},
 				Required: true,
 			},
+			"id": {
+				Type:     types.StringType,
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -101,7 +105,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	accounts, _, err := r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error reading order",
+			"Error creating account",
 			"Could not create account "+plan.Name.Value+": "+err.Error(),
 		)
 		return
@@ -128,6 +132,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 				HostGroupId:       types.String{Value: hostGroupId},
 				PropagationLabels: propLabels,
 				AccountRoles:      plan.AccountRoles,
+				Id:                types.String{Value: account["id"].(string)},
 			}
 			break
 		}
@@ -210,6 +215,7 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		HostGroupId:       types.String{Value: account["hostGroupId"].(string)},
 		PropagationLabels: propagationLabels,
 		AccountRoles:      roles,
+		Id:                types.String{Value: account["id"].(string)},
 	}
 
 	// Set state
@@ -342,6 +348,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		HostGroupId:       types.String{Value: account["hostGroupId"].(string)},
 		PropagationLabels: propagationLabels,
 		AccountRoles:      roles,
+		Id:                types.String{Value: account["id"].(string)},
 	}
 
 	// Set state
@@ -436,6 +443,7 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 		HostGroupName:     types.String{Value: hostGroupName},
 		PropagationLabels: propagationLabels,
 		AccountRoles:      roles,
+		Id:                types.String{Value: account["id"].(string)},
 	}
 
 	// Set state
