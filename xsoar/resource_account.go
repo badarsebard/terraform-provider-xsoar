@@ -2,10 +2,13 @@ package xsoar
 
 import (
 	"context"
+	"fmt"
 	"github.com/badarsebard/xsoar-sdk-go/openapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"time"
 )
 
 type resourceAccountType struct{}
@@ -102,14 +105,15 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	createAccountRequest.SetSyncOnCreation(true)
 
 	// Create new account
-	accounts, _, err := r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating account",
-			"Could not create account "+plan.Name.Value+": "+err.Error(),
-		)
-		return
-	}
+	var accounts []map[string]interface{}
+	err = resource.RetryContext(ctx, 300*time.Second, func() *resource.RetryError {
+		accounts, _, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
+		if err != nil {
+			time.Sleep(30 * time.Second)
+			return resource.RetryableError(fmt.Errorf("error creating instance: %s", err))
+		}
+		return nil
+	})
 
 	// Map response body to resource schema attribute
 	var result Account

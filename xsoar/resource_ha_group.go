@@ -113,10 +113,11 @@ func (r resourceHAGroup) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 	// Get HA group from API and then update what is in state from what the API returns
 	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, state.Id.Value).Execute()
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error getting HA group",
-			"Could not get HA group "+state.Name.Value+": "+err.Error(),
-		)
+		resp.State.RemoveResource(ctx)
+		//resp.Diagnostics.AddError(
+		//	"Error getting HA group",
+		//	"Could not get HA group "+state.Name.Value+": "+err.Error(),
+		//)
 		return
 	}
 
@@ -194,8 +195,14 @@ func (r resourceHAGroup) Delete(ctx context.Context, req tfsdk.DeleteResourceReq
 		return
 	}
 
+	// Verify existence
+	_, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, state.Id.Value).Execute()
+	if err != nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	// Delete HA group by calling API
-	_, _, err := r.p.client.DefaultApi.DeleteHAGroup(ctx, state.Id.Value).Execute()
+	_, _, err = r.p.client.DefaultApi.DeleteHAGroup(ctx, state.Id.Value).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting HA group",
