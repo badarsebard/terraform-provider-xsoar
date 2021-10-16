@@ -8,15 +8,15 @@ terraform {
 }
 
 provider "xsoar" {
-  main_host = "https://your_main_host"
+  main_host = "your.main.hostname.fqdn"
   api_key   = "your_api_key"
   insecure  = true
 }
 
 resource "xsoar_ha_group" "ha1" {
   name                 = "ha_1"
-  elasticsearch_url    = "http://elastic.xsoar.local:9200"
   elastic_index_prefix = "ha_1_"
+  elasticsearch_url = "http://elastic.xsoar.local:9200"
 }
 
 resource "xsoar_host" "host1" {

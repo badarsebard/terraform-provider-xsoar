@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  demisto:
+    image: xsoar:0.1.0
+    ports:
+      - "8443:443"
+    environment:
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_CERT_PATH: /certs/client
+      DOCKER_TLS_VERIFY: 1
+    volumes:
+      - dind-certs-client:/certs/client
+      - demisto-lib:/var/lib/demisto
+      - demisto-usr:/usr/local/demisto
+  docker:
+    image: docker:dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    volumes:
+      - dind-certs-client:/certs/client
+      - demisto-lib:/var/lib/demisto
+      - demisto-usr:/usr/local/demisto
+
+volumes:
+  dind-certs-client:
+  demisto-lib:
+  demisto-usr:
