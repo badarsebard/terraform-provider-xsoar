@@ -377,7 +377,6 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 		return
 	}
 
-	// Map response body to resource schema attribute
 	var result Host
 	result = Host{
 		Name: types.String{Value: hostName},

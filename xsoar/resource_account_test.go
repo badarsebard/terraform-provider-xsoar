@@ -14,7 +14,7 @@ import (
 
 func TestAccAccount_basic(t *testing.T) {
 	rName := acctest.RandStringFromCharSet(5, acctest.CharSetAlpha)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { testAccAccountResourcePreCheck(t) },
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
 			"xsoar": func() (tfprotov6.ProviderServer, error) {

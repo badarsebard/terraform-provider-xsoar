@@ -25,27 +25,27 @@ func (r dataSourceHostType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Dia
 			"ha_group_name": {
 				Type:     types.StringType,
 				Computed: true,
-				Optional: false,
+				Optional: true,
 			},
-			"elasticearch_url": {
+			"elasticsearch_url": {
 				Type:     types.StringType,
 				Computed: true,
-				Optional: false,
+				Optional: true,
 			},
 			"server_url": {
 				Type:     types.StringType,
-				Computed: true,
-				Optional: false,
+				Computed: false,
+				Optional: true,
 			},
 			"ssh_user": {
 				Type:     types.StringType,
-				Computed: true,
-				Optional: false,
+				Computed: false,
+				Optional: true,
 			},
 			"ssh_key_file": {
 				Type:     types.StringType,
-				Computed: true,
-				Optional: false,
+				Computed: false,
+				Optional: true,
 			},
 		},
 	}, nil
@@ -101,14 +101,8 @@ func (r dataSourceHost) Read(ctx context.Context, req tfsdk.ReadDataSourceReques
 	// Map response body to resource schema attribute
 	var hostName = host["host"].(string)
 	var hostId = host["id"].(string)
+	var haGroupId = host["hostGroupId"].(string)
 
-	var result Host
-	result = Host{
-		Name: types.String{Value: hostName},
-		Id:   types.String{Value: hostId},
-	}
-
-	haGroupId := host["hostGroupId"].(string)
 	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, haGroupId).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -118,28 +112,32 @@ func (r dataSourceHost) Read(ctx context.Context, req tfsdk.ReadDataSourceReques
 		return
 	}
 
+	var result Host
+	result = Host{
+		Name: types.String{Value: hostName},
+		Id:   types.String{Value: hostId},
+	}
+
 	var isHA = false
 	if host["host"].(string) != haGroup.GetName() {
 		isHA = true
-	}
-	if isHA {
 		result.HAGroupName.Value = haGroup.GetName()
+	} else {
+		result.HAGroupName.Null = true
 	}
 
-	var isElastic = false
 	if len(host["elasticsearchAddress"].(string)) > 0 {
-		isElastic = true
-	}
-	if isElastic {
-		var elasticsearchAddress string
-		elasticsearchAddress = host["elasticsearchAddress"].(string)
-		if !isHA || (!isHA && len(state.ElasticsearchUrl.Value) > 0) {
-			result.ElasticsearchUrl.Value = elasticsearchAddress
+		if isHA {
+			result.ElasticsearchUrl.Null = true
+		} else {
+			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
 		}
+	} else {
+		result.ElasticsearchUrl.Null = true
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

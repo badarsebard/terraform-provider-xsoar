@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "xsoar" {
-  main_host = "your.main.hostname.fqdn"
+  main_host = "https://your.main.hostname.fqdn"
   api_key   = "your_api_key"
   insecure  = true
 }

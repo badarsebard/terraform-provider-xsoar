@@ -29,7 +29,7 @@ release:
 install: build
 	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
-	rm -rf examples/.terraform/ examples/.terraform.lock.hcl examples/*.tfstate
+	rm -rf examples/.terraform/ examples/.terraform.lock.hcl examples/*.tfstate*
 
 test:
 	go test -i $(TEST) || exit 1

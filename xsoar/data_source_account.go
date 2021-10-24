@@ -36,6 +36,10 @@ func (r dataSourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 				Computed: true,
 				Optional: false,
 			},
+			"id": {
+				Type:     types.StringType,
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -119,6 +123,7 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		HostGroupId:       types.String{Value: account["hostGroupId"].(string)},
 		PropagationLabels: propagationLabels,
 		AccountRoles:      roles,
+		Id:                types.String{Value: account["id"].(string)},
 	}
 
 	// Set state

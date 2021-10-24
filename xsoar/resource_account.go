@@ -212,6 +212,7 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 			break
 		}
 	}
+
 	// Map response body to resource schema attribute
 	state = Account{
 		Name:              types.String{Value: account["displayName"].(string)},
