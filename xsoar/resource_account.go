@@ -22,7 +22,8 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				Type: types.ListType{
 					ElemType: types.StringType,
 				},
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"host_group_name": {
 				Type:     types.StringType,
@@ -42,7 +43,8 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				Type: types.ListType{
 					ElemType: types.StringType,
 				},
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"id": {
 				Type:     types.StringType,
@@ -83,7 +85,6 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 	// Generate API request body from plan
 	createAccountRequest := *openapi.NewCreateAccountRequest()
-	createAccountRequest.SetAccountRoles(plan.AccountRoles)
 	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -101,7 +102,12 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	}
 	createAccountRequest.SetHostGroupId(hostGroupId)
 	createAccountRequest.SetName(plan.Name.Value)
-	createAccountRequest.SetPropagationLabels(plan.PropagationLabels)
+	if len(plan.AccountRoles) > 0 {
+		createAccountRequest.SetAccountRoles(plan.AccountRoles)
+	}
+	if len(plan.PropagationLabels) > 0 {
+		createAccountRequest.SetPropagationLabels(plan.PropagationLabels)
+	}
 	createAccountRequest.SetSyncOnCreation(true)
 
 	// Create new account
@@ -252,10 +258,21 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	// Generate API request body from plan
 	// This requires up to two requests: roles and propagation labels, and host migration
 	// RolesAndPropagationLabels
-	if equalSliceString(plan.AccountRoles, state.AccountRoles) || equalSliceString(plan.PropagationLabels, state.PropagationLabels) {
-		updateRolesAndPropagationLabelsRequest := *openapi.NewUpdateRolesAndPropagationLabelsRequest()
+	updateRolesAndPropagationLabelsRequest := *openapi.NewUpdateRolesAndPropagationLabelsRequest()
+	var updateRolesAndPropagationLabels = false
+	if len(plan.AccountRoles) > 0 && !equalSliceString(plan.AccountRoles, state.AccountRoles) {
 		updateRolesAndPropagationLabelsRequest.SetSelectedRoles(plan.AccountRoles)
+		updateRolesAndPropagationLabels = true
+	} else {
+		updateRolesAndPropagationLabelsRequest.SetSelectedRoles(state.AccountRoles)
+	}
+	if len(plan.PropagationLabels) > 0 && !equalSliceString(plan.PropagationLabels, state.PropagationLabels) {
 		updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(plan.PropagationLabels)
+		updateRolesAndPropagationLabels = true
+	} else {
+		updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(state.PropagationLabels)
+	}
+	if updateRolesAndPropagationLabels {
 		_, _, err := r.p.client.DefaultApi.UpdateAccount(ctx, plan.Name.Value).UpdateRolesAndPropagationLabelsRequest(updateRolesAndPropagationLabelsRequest).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
