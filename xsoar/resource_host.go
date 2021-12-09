@@ -1,6 +1,7 @@
 package xsoar
 
 import (
+	"bytes"
 	"context"
 	"github.com/bramvdbogaerde/go-scp"
 	"github.com/bramvdbogaerde/go-scp/auth"
@@ -9,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -104,8 +107,13 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	// Creation is a multi-step process
 	// 1) Trigger or confirm the build of the host installer
 	var haGroupId string
+	var skipToXfer = false
+	var installer *os.File
+	var httpResponse *http.Response
+	var err error
 	if isHA {
-		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
+		var haGroups []map[string]interface{}
+		haGroups, _, err = r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error listing HA groups",
@@ -118,45 +126,98 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				haGroupId = group["id"].(string)
 			}
 		}
-		_, _, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating HA installer",
-				"Could not create HA installer: "+err.Error(),
-			)
-			return
+
+		// check if installer already exists
+		log.Println("[ERROR] here i am")
+		installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
+		if err == nil {
+			log.Println("logger already exists, skipping to transfer")
+			skipToXfer = true
+		}
+
+		if !skipToXfer {
+			log.Println("[ERROR] here i am")
+			_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
+			if err != nil {
+				var body []byte
+				_, _ = httpResponse.Body.Read(body)
+				log.Printf("%s\n", body)
+				i := bytes.Index(body, []byte("Already building host for ha group"))
+				if i > -1 {
+					var retry = true
+					for retry {
+						installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
+						if err == nil {
+							skipToXfer = true
+						}
+						if httpResponse.StatusCode != 404 {
+							retry = false
+						}
+					}
+				} else {
+					resp.Diagnostics.AddError(
+						"Error creating HA installer what the fuckity fuck",
+						"Could not create HA installer: ",
+					)
+					return
+				}
+			}
 		}
 	} else {
-		_, _, err := r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating host installer",
-				"Could not create host installer: "+err.Error(),
-			)
-			return
+		installer, httpResponse, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
+		if err == nil {
+			skipToXfer = true
+		}
+
+		if !skipToXfer {
+			_, _, err := r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
+			if err != nil {
+				var body []byte
+				_, err := httpResponse.Body.Read(body)
+				i := bytes.Index(body, []byte("Already building host for ha group"))
+				if i > -1 {
+					var retry = true
+					for retry {
+						installer, httpResponse, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
+						if err == nil {
+							skipToXfer = true
+						}
+						if httpResponse.StatusCode != 404 {
+							retry = false
+						}
+					}
+				} else {
+					resp.Diagnostics.AddError(
+						"Error creating host installer",
+						"Could not create host installer: "+err.Error(),
+					)
+					return
+				}
+			}
 		}
 	}
 
 	// 2) Download the installer
-	var installer *os.File
-	var err error
-	if isHA {
-		installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error downloading HA installer",
-				"Could not download HA installer: "+err.Error(),
-			)
-			return
-		}
-	} else {
-		installer, _, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error downloading host installer",
-				"Could not download host installer: "+err.Error(),
-			)
-			return
+	if !skipToXfer {
+		var err error
+		if isHA {
+			installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Error downloading HA installer",
+					"Could not download HA installer: "+err.Error(),
+				)
+				return
+			}
+		} else {
+			installer, _, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Error downloading host installer",
+					"Could not download host installer: "+err.Error(),
+				)
+				return
+			}
 		}
 	}
 
