@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/badarsebard/xsoar-sdk-go/openapi"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"io"
+	"log"
+	"net/http"
 	"time"
 )
 
@@ -80,6 +84,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		log.Printf("%+v\n", req.Plan)
 		return
 	}
 
@@ -102,33 +107,61 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	}
 	createAccountRequest.SetHostGroupId(hostGroupId)
 	createAccountRequest.SetName(plan.Name.Value)
-	if len(plan.AccountRoles) > 0 {
-		createAccountRequest.SetAccountRoles(plan.AccountRoles)
+	if !plan.AccountRoles.Null && len(plan.AccountRoles.Elems) > 0 {
+		var accountRoles []string
+		plan.AccountRoles.ElementsAs(ctx, accountRoles, true)
+		createAccountRequest.SetAccountRoles(accountRoles)
+	} else {
+		createAccountRequest.SetAccountRoles([]string{"Administrator"})
 	}
-	if len(plan.PropagationLabels) > 0 {
-		createAccountRequest.SetPropagationLabels(plan.PropagationLabels)
+	if !plan.PropagationLabels.Null && len(plan.PropagationLabels.Elems) > 0 {
+		var propagationLabels []string
+		plan.PropagationLabels.ElementsAs(ctx, propagationLabels, true)
+		createAccountRequest.SetPropagationLabels(propagationLabels)
 	}
 	createAccountRequest.SetSyncOnCreation(true)
 
 	// Create new account
 	var accounts []map[string]interface{}
 	err = resource.RetryContext(ctx, 300*time.Second, func() *resource.RetryError {
-		accounts, _, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
+		var httpResponse *http.Response
+		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
+		log.Printf("creating account")
 		if err != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("%s : %s - %s\n", payload, httpResponse.Status, body)
 			time.Sleep(30 * time.Second)
 			return resource.RetryableError(fmt.Errorf("error creating instance: %s", err))
 		}
 		return nil
 	})
+	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error listing account details",
+			"Could not read account details"+err.Error(),
+		)
+		return
+	}
 
 	// Map response body to resource schema attribute
 	var result Account
 	for _, account := range accounts {
 		if account["displayName"].(string) == plan.Name.Value {
-			var propLabels = []string{}
-			for _, label := range account["propagationLabels"].([]interface{}) {
-				propLabels = append(propLabels, label.(string))
+			var propagationLabels []attr.Value
+			if account["propagationLabels"] == nil {
+				propagationLabels = []attr.Value{}
+			} else {
+				for _, label := range account["propagationLabels"].([]interface{}) {
+					propagationLabels = append(propagationLabels, types.String{
+						Unknown: false,
+						Null:    false,
+						Value:   label.(string),
+					})
+				}
 			}
+
 			var hostGroupName string
 			for _, group := range haGroups {
 				if group["id"].(string) == account["hostGroupId"].(string) {
@@ -136,13 +169,40 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 					break
 				}
 			}
+
+			var roles []attr.Value
+			for _, detail := range details {
+				castDetail := detail.(map[string]interface{})
+				if account["name"].(string) == castDetail["name"].(string) {
+					roleObjects := castDetail["roles"].([]interface{})
+					for _, roleObject := range roleObjects {
+						roleName := roleObject.(map[string]interface{})["name"]
+						roles = append(roles, types.String{
+							Unknown: false,
+							Null:    false,
+							Value:   roleName.(string),
+						})
+					}
+				}
+			}
+
 			result = Account{
-				Name:              types.String{Value: account["displayName"].(string)},
-				HostGroupName:     types.String{Value: hostGroupName},
-				HostGroupId:       types.String{Value: hostGroupId},
-				PropagationLabels: propLabels,
-				AccountRoles:      plan.AccountRoles,
-				Id:                types.String{Value: account["id"].(string)},
+				Name:          types.String{Value: account["displayName"].(string)},
+				HostGroupName: types.String{Value: hostGroupName},
+				HostGroupId:   types.String{Value: hostGroupId},
+				PropagationLabels: types.List{
+					Unknown:  false,
+					Null:     false,
+					Elems:    propagationLabels,
+					ElemType: types.StringType,
+				},
+				AccountRoles: types.List{
+					Unknown:  false,
+					Null:     false,
+					Elems:    roles,
+					ElemType: types.StringType,
+				},
+				Id: types.String{Value: account["id"].(string)},
 			}
 			break
 		}
@@ -179,9 +239,17 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		return
 	}
 
-	var propagationLabels = []string{}
-	for _, prop := range account["propagationLabels"].([]interface{}) {
-		propagationLabels = append(propagationLabels, prop.(string))
+	var propagationLabels []attr.Value
+	if account["propagationLabels"] == nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range account["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
@@ -192,14 +260,18 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		)
 		return
 	}
-	var roles []string
+	var roles []attr.Value
 	for _, detail := range details {
 		castDetail := detail.(map[string]interface{})
 		if account["name"].(string) == castDetail["name"].(string) {
 			roleObjects := castDetail["roles"].([]interface{})
 			for _, roleObject := range roleObjects {
 				roleName := roleObject.(map[string]interface{})["name"]
-				roles = append(roles, roleName.(string))
+				roles = append(roles, types.String{
+					Unknown: false,
+					Null:    false,
+					Value:   roleName.(string),
+				})
 			}
 		}
 	}
@@ -221,12 +293,22 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 
 	// Map response body to resource schema attribute
 	state = Account{
-		Name:              types.String{Value: account["displayName"].(string)},
-		HostGroupName:     types.String{Value: hostGroupName},
-		HostGroupId:       types.String{Value: account["hostGroupId"].(string)},
-		PropagationLabels: propagationLabels,
-		AccountRoles:      roles,
-		Id:                types.String{Value: account["id"].(string)},
+		Name:          types.String{Value: account["displayName"].(string)},
+		HostGroupName: types.String{Value: hostGroupName},
+		HostGroupId:   types.String{Value: account["hostGroupId"].(string)},
+		PropagationLabels: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    propagationLabels,
+			ElemType: types.StringType,
+		},
+		AccountRoles: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    roles,
+			ElemType: types.StringType,
+		},
+		Id: types.String{Value: account["id"].(string)},
 	}
 
 	// Set state
@@ -258,28 +340,54 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	// Generate API request body from plan
 	// This requires up to two requests: roles and propagation labels, and host migration
 	// RolesAndPropagationLabels
-	updateRolesAndPropagationLabelsRequest := *openapi.NewUpdateRolesAndPropagationLabelsRequest()
-	var updateRolesAndPropagationLabels = false
-	if len(plan.AccountRoles) > 0 && !equalSliceString(plan.AccountRoles, state.AccountRoles) {
-		updateRolesAndPropagationLabelsRequest.SetSelectedRoles(plan.AccountRoles)
-		updateRolesAndPropagationLabels = true
-	} else {
-		updateRolesAndPropagationLabelsRequest.SetSelectedRoles(state.AccountRoles)
-	}
-	if len(plan.PropagationLabels) > 0 && !equalSliceString(plan.PropagationLabels, state.PropagationLabels) {
-		updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(plan.PropagationLabels)
-		updateRolesAndPropagationLabels = true
-	} else {
-		updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(state.PropagationLabels)
-	}
-	if updateRolesAndPropagationLabels {
-		_, _, err := r.p.client.DefaultApi.UpdateAccount(ctx, plan.Name.Value).UpdateRolesAndPropagationLabelsRequest(updateRolesAndPropagationLabelsRequest).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error update account",
-				"Could not update account "+plan.Name.Value+": "+err.Error(),
-			)
-			return
+	if !plan.AccountRoles.Null || !plan.PropagationLabels.Null {
+		updateRolesAndPropagationLabelsRequest := *openapi.NewUpdateRolesAndPropagationLabelsRequest()
+		var updateRolesAndPropagationLabels = false
+		if !plan.AccountRoles.Null && len(plan.AccountRoles.Elems) > 0 && !plan.AccountRoles.Equal(state.AccountRoles) {
+			var roles []string
+			for _, elem := range plan.AccountRoles.Elems {
+				var role interface{}
+				role, _ = elem.ToTerraformValue(ctx)
+				roles = append(roles, role.(string))
+			}
+			updateRolesAndPropagationLabelsRequest.SetSelectedRoles(roles)
+			updateRolesAndPropagationLabels = true
+		} else {
+			var roles []string
+			for _, elem := range state.AccountRoles.Elems {
+				var role interface{}
+				role, _ = elem.ToTerraformValue(ctx)
+				roles = append(roles, role.(string))
+			}
+			updateRolesAndPropagationLabelsRequest.SetSelectedRoles(roles)
+		}
+		if !plan.PropagationLabels.Null && len(plan.PropagationLabels.Elems) > 0 && !plan.PropagationLabels.Equal(state.PropagationLabels) {
+			var propagationLabels []string
+			for _, elem := range plan.PropagationLabels.Elems {
+				var label interface{}
+				label, _ = elem.ToTerraformValue(ctx)
+				propagationLabels = append(propagationLabels, label.(string))
+			}
+			updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(propagationLabels)
+			updateRolesAndPropagationLabels = true
+		} else {
+			var propagationLabels []string
+			for _, elem := range state.PropagationLabels.Elems {
+				var label interface{}
+				label, _ = elem.ToTerraformValue(ctx)
+				propagationLabels = append(propagationLabels, label.(string))
+			}
+			updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(propagationLabels)
+		}
+		if updateRolesAndPropagationLabels {
+			_, _, err := r.p.client.DefaultApi.UpdateAccount(ctx, plan.Name.Value).UpdateRolesAndPropagationLabelsRequest(updateRolesAndPropagationLabelsRequest).Execute()
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Error update account",
+					"Could not update account "+plan.Name.Value+": "+err.Error(),
+				)
+				return
+			}
 		}
 	}
 
@@ -324,9 +432,17 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		return
 	}
 
-	var propagationLabels = []string{}
-	for _, prop := range account["propagationLabels"].([]interface{}) {
-		propagationLabels = append(propagationLabels, prop.(string))
+	var propagationLabels []attr.Value
+	if account["propagationLabels"] != nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range account["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
@@ -337,14 +453,18 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		)
 		return
 	}
-	var roles []string
+	var roles []attr.Value
 	for _, detail := range details {
 		castDetail := detail.(map[string]interface{})
 		if account["name"].(string) == castDetail["name"].(string) {
 			roleObjects := castDetail["roles"].([]interface{})
 			for _, roleObject := range roleObjects {
 				roleName := roleObject.(map[string]interface{})["name"]
-				roles = append(roles, roleName.(string))
+				roles = append(roles, types.String{
+					Unknown: false,
+					Null:    false,
+					Value:   roleName.(string),
+				})
 			}
 		}
 	}
@@ -365,12 +485,22 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	}
 	// Map response body to resource schema attribute
 	result := Account{
-		Name:              types.String{Value: account["displayName"].(string)},
-		HostGroupName:     types.String{Value: hostGroupName},
-		HostGroupId:       types.String{Value: account["hostGroupId"].(string)},
-		PropagationLabels: propagationLabels,
-		AccountRoles:      roles,
-		Id:                types.String{Value: account["id"].(string)},
+		Name:          types.String{Value: account["displayName"].(string)},
+		HostGroupName: types.String{Value: hostGroupName},
+		HostGroupId:   types.String{Value: account["hostGroupId"].(string)},
+		PropagationLabels: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    propagationLabels,
+			ElemType: types.StringType,
+		},
+		AccountRoles: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    roles,
+			ElemType: types.StringType,
+		},
+		Id: types.String{Value: account["id"].(string)},
 	}
 
 	// Set state
@@ -420,9 +550,17 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 		return
 	}
 
-	var propagationLabels = []string{}
-	for _, prop := range account["propagationLabels"].([]interface{}) {
-		propagationLabels = append(propagationLabels, prop.(string))
+	var propagationLabels []attr.Value
+	if account["propagationLabels"] != nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range account["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
@@ -433,14 +571,18 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 		)
 		return
 	}
-	var roles []string
+	var roles []attr.Value
 	for _, detail := range details {
 		castDetail := detail.(map[string]interface{})
 		if account["name"].(string) == castDetail["name"].(string) {
 			roleObjects := castDetail["roles"].([]interface{})
 			for _, roleObject := range roleObjects {
 				roleName := roleObject.(map[string]interface{})["name"]
-				roles = append(roles, roleName.(string))
+				roles = append(roles, types.String{
+					Unknown: false,
+					Null:    false,
+					Value:   roleName.(string),
+				})
 			}
 		}
 	}
@@ -461,11 +603,21 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 	}
 	// Map response body to resource schema attribute
 	var state = Account{
-		Name:              types.String{Value: account["displayName"].(string)},
-		HostGroupName:     types.String{Value: hostGroupName},
-		PropagationLabels: propagationLabels,
-		AccountRoles:      roles,
-		Id:                types.String{Value: account["id"].(string)},
+		Name:          types.String{Value: account["displayName"].(string)},
+		HostGroupName: types.String{Value: hostGroupName},
+		PropagationLabels: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    propagationLabels,
+			ElemType: types.StringType,
+		},
+		AccountRoles: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    roles,
+			ElemType: types.StringType,
+		},
+		Id: types.String{Value: account["id"].(string)},
 	}
 
 	// Set state

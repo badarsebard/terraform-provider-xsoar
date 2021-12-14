@@ -6,11 +6,11 @@ import (
 
 // Account -
 type Account struct {
-	AccountRoles      []string     `tfsdk:"account_roles"`
+	AccountRoles      types.List   `tfsdk:"account_roles"`
 	HostGroupName     types.String `tfsdk:"host_group_name"`
 	HostGroupId       types.String `tfsdk:"host_group_id"`
 	Name              types.String `tfsdk:"name"`
-	PropagationLabels []string     `tfsdk:"propagation_labels"`
+	PropagationLabels types.List   `tfsdk:"propagation_labels"`
 	Id                types.String `tfsdk:"id"`
 }
 

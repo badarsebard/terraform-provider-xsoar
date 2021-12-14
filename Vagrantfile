@@ -36,6 +36,7 @@ Vagrant.configure("2") do |config|
     end
     host.vm.provision :hosts, :sync_hosts => true
     host.vm.network "private_network", ip: "192.168.33.11"
+    host.vm.provision "shell", path: ".run/provision_host.sh"
   end
 
   config.vm.define "host2" do |host|
@@ -47,6 +48,7 @@ Vagrant.configure("2") do |config|
     end
     host.vm.provision :hosts, :sync_hosts => true
     host.vm.network "private_network", ip: "192.168.33.12"
+    host.vm.provision "shell", path: ".run/provision_host.sh"
   end
 #
 #   config.vm.define "host3" do |host|

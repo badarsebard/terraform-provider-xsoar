@@ -2,6 +2,7 @@ package xsoar
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -76,9 +77,17 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 
-	var propagationLabels = []string{}
-	for _, prop := range account["propagationLabels"].([]interface{}) {
-		propagationLabels = append(propagationLabels, prop.(string))
+	var propagationLabels []attr.Value
+	if account["propagationLabels"] != nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range account["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
@@ -89,14 +98,18 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		)
 		return
 	}
-	var roles []string
+	var roles []attr.Value
 	for _, detail := range details {
 		castDetail := detail.(map[string]interface{})
 		if account["name"].(string) == castDetail["name"].(string) {
 			roleObjects := castDetail["roles"].([]interface{})
 			for _, roleObject := range roleObjects {
 				roleName := roleObject.(map[string]interface{})["name"]
-				roles = append(roles, roleName.(string))
+				roles = append(roles, types.String{
+					Unknown: false,
+					Null:    false,
+					Value:   roleName.(string),
+				})
 			}
 		}
 	}
@@ -118,12 +131,22 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 
 	// Map response body to resource schema attribute
 	state = Account{
-		Name:              types.String{Value: account["displayName"].(string)},
-		HostGroupName:     types.String{Value: hostGroupName},
-		HostGroupId:       types.String{Value: account["hostGroupId"].(string)},
-		PropagationLabels: propagationLabels,
-		AccountRoles:      roles,
-		Id:                types.String{Value: account["id"].(string)},
+		Name:          types.String{Value: account["displayName"].(string)},
+		HostGroupName: types.String{Value: hostGroupName},
+		HostGroupId:   types.String{Value: account["hostGroupId"].(string)},
+		PropagationLabels: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    propagationLabels,
+			ElemType: types.StringType,
+		},
+		AccountRoles: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    propagationLabels,
+			ElemType: types.StringType,
+		},
+		Id: types.String{Value: account["id"].(string)},
 	}
 
 	// Set state

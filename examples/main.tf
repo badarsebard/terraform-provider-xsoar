@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     xsoar = {
-      version = "~> 0.1.0"
-      source  = "local/badarsebard/xsoar"
+      version = "~> 0.1"
+      source  = "badarsebard/xsoar"
     }
   }
 }

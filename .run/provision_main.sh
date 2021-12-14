@@ -1,6 +1,15 @@
+set -x
+
 sudo apt-get update
+sudo apt-get -y install ca-certificates curl gnupg lsb-release makeself
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 sudo /vagrant/local/installer.sh -- -multi-tenant -y -elasticsearch-url=http://elastic.xsoar.local:9200 -tools=false
-sudo cp /vagrant/local/license /tmp/demisto.lic
+sudo cp /vagrant/local/demisto.lic /tmp/demisto.lic
 sudo chown demisto:demisto /tmp/demisto.lic
 sudo cp /tmp/demisto.lic /var/lib/demisto/
 sudo systemctl restart demisto

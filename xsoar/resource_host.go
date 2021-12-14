@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"golang.org/x/crypto/ssh"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -128,20 +129,29 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		}
 
 		// check if installer already exists
-		log.Println("[ERROR] here i am")
 		installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 		if err == nil {
-			log.Println("logger already exists, skipping to transfer")
+			log.Println("installer already exists, skipping to transfer")
 			skipToXfer = true
 		}
 
 		if !skipToXfer {
-			log.Println("[ERROR] here i am")
+			log.Println("installer doesn't exist, creating")
 			_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
+			if err == nil {
+				body, bodyErr := io.ReadAll(httpResponse.Body)
+				if bodyErr != nil {
+					log.Println("error reading body: " + bodyErr.Error())
+				}
+				log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+			}
 			if err != nil {
-				var body []byte
-				_, _ = httpResponse.Body.Read(body)
-				log.Printf("%s\n", body)
+				body, bodyErr := io.ReadAll(httpResponse.Body)
+				if bodyErr != nil {
+					log.Println("error reading body: " + bodyErr.Error())
+					return
+				}
+				log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
 				i := bytes.Index(body, []byte("Already building host for ha group"))
 				if i > -1 {
 					var retry = true
@@ -149,15 +159,17 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 						installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 						if err == nil {
 							skipToXfer = true
+							break
 						}
 						if httpResponse.StatusCode != 404 {
 							retry = false
+							return
 						}
 					}
 				} else {
 					resp.Diagnostics.AddError(
-						"Error creating HA installer what the fuckity fuck",
-						"Could not create HA installer: ",
+						"Error creating HA installer",
+						"Could not create HA installer: "+err.Error(),
 					)
 					return
 				}
@@ -222,6 +234,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 
 	// 3) Transfer installer to host server
+	log.Println("Creating SSH connection")
 	clientConfig, _ := auth.PrivateKey(
 		plan.SSHUser.Value,
 		plan.SSHKeyFile.Value,
@@ -239,6 +252,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 	defer client.Close()
 
+	log.Println("Copying installer")
 	err = client.CopyFile(installer, "/tmp/installer.sh", "0755")
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -249,6 +263,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 
 	// 4) Execute installer
+	log.Println("Executing install")
 	puKeyFile, err := ioutil.ReadFile(plan.SSHKeyFile.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -310,6 +325,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 
 	// Verify host details
+	log.Println("Verifying host details")
 	var host map[string]interface{}
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
@@ -342,11 +358,11 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	var hostId = host["id"].(string)
 	var hostGroupId = host["hostGroupId"].(string)
 
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
+	haGroup, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
-			"Could not get HA group: "+err.Error(),
+			"Could not get HA group: "+err.Error()+" "+httpResponse.Status,
 		)
 		return
 	}
