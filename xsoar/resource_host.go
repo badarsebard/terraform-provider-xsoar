@@ -117,6 +117,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	var err error
 	if isHA {
 		var haGroups []map[string]interface{}
+		log.Println("List ha groups")
 		haGroups, _, err = r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -132,6 +133,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		}
 
 		// check if installer already exists
+		log.Println("Get HA installer")
 		installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 		if err == nil {
 			log.Println("installer already exists, skipping to transfer")
