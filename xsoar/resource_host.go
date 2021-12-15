@@ -139,6 +139,18 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			log.Println("installer already exists, skipping to transfer")
 			skipToXfer = true
 		}
+		if err != nil {
+			body, bodyErr := io.ReadAll(httpResponse.Body)
+			if bodyErr != nil {
+				log.Println("error reading body: " + bodyErr.Error())
+			}
+			log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+			resp.Diagnostics.AddError(
+				"Error downloading HA installer",
+				"Could not download HA installer: "+err.Error(),
+			)
+			return
+		}
 
 		if !skipToXfer {
 			log.Println("installer doesn't exist, creating")
