@@ -3,8 +3,9 @@ HOSTNAME=local
 NAMESPACE=badarsebard
 NAME=xsoar
 BINARY=terraform-provider-${NAME}
-VERSION=0.1.2
+VERSION=0.1.8
 OSARCH=${OS_ARCH}
+#OSARCH=linux_amd64
 
 default: install
 

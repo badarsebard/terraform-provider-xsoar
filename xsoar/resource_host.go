@@ -134,16 +134,12 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 		// check if installer already exists
 		log.Println("Get HA installer")
-		log.Println(haGroupId)
 		installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
-		log.Println(installer)
-		log.Println(httpResponse)
-		log.Println(err)
 		if err == nil {
 			log.Println("installer already exists, skipping to transfer")
 			skipToXfer = true
 		}
-		if err != nil {
+		if err != nil && httpResponse.StatusCode != 404 {
 			log.Println("Error downloading HA installer")
 			body, bodyErr := io.ReadAll(httpResponse.Body)
 			if bodyErr != nil {
@@ -178,7 +174,6 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				if i > -1 {
 					var retry = true
 					for retry {
-						log.Println("Attempting to create installer")
 						installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 						if err == nil {
 							skipToXfer = true

@@ -50,16 +50,17 @@ Vagrant.configure("2") do |config|
     host.vm.network "private_network", ip: "192.168.33.12"
     host.vm.provision "shell", path: ".run/provision_host.sh"
   end
-#
-#   config.vm.define "host3" do |host|
-#     host.vm.box = "ubuntu/focal64"
-#     host.vm.hostname = "host3.xsoar.local"
-#     host.vm.provider "virtualbox" do |v|
-#       v.memory = 2048
-#       v.cpus = 1
-#     end
-#     host.vm.provision :hosts, :sync_hosts => true
-#     host.vm.network "private_network", ip: "192.168.33.13"
-#   end
+
+  config.vm.define "host3" do |host|
+    host.vm.box = "ubuntu/focal64"
+    host.vm.hostname = "host3.xsoar.local"
+    host.vm.provider "virtualbox" do |v|
+      v.memory = 2048
+      v.cpus = 1
+    end
+    host.vm.provision :hosts, :sync_hosts => true
+    host.vm.network "private_network", ip: "192.168.33.13"
+    host.vm.synced_folder ENV['HOME']+"/.terraform.d", "/home/vagrant/.terraform.d"
+  end
 
 end
