@@ -76,6 +76,7 @@ type resourceHost struct {
 
 // Create a new resource
 func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+	log.Println("Starting create")
 	if !r.p.configured {
 		resp.Diagnostics.AddError(
 			"Provider not configured",
@@ -91,6 +92,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	log.Printf("%+v\n", plan)
 
 	var isHA bool
 	if !plan.HAGroupName.Null && len(plan.HAGroupName.Value) > 0 {
@@ -107,6 +109,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 	// Creation is a multi-step process
 	// 1) Trigger or confirm the build of the host installer
+	log.Println("Trigger or confirm build of host installer")
 	var haGroupId string
 	var skipToXfer = false
 	var installer *os.File
@@ -156,6 +159,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				if i > -1 {
 					var retry = true
 					for retry {
+						log.Println("Attempting to create installer")
 						installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 						if err == nil {
 							skipToXfer = true
@@ -176,12 +180,14 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			}
 		}
 	} else {
+		log.Println("Downloading installer")
 		installer, httpResponse, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
 		if err == nil {
 			skipToXfer = true
 		}
 
 		if !skipToXfer {
+			log.Println("Attempting to create installer")
 			_, _, err := r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
 			if err != nil {
 				var body []byte
@@ -190,6 +196,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				if i > -1 {
 					var retry = true
 					for retry {
+						log.Println("Downloading installer")
 						installer, httpResponse, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
 						if err == nil {
 							skipToXfer = true
@@ -213,6 +220,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	if !skipToXfer {
 		var err error
 		if isHA {
+			log.Println("Downloading installer")
 			installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
@@ -222,6 +230,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				return
 			}
 		} else {
+			log.Println("Downloading installer")
 			installer, _, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
