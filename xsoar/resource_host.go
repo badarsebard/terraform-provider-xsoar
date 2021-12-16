@@ -138,7 +138,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		log.Println(installer)
 		log.Println(httpResponse)
 		log.Println(err)
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		if err == nil {
 			log.Println("installer already exists, skipping to transfer")
 			skipToXfer = true
