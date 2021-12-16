@@ -135,7 +135,6 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		// check if installer already exists
 		log.Println("Get HA installer")
 		installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
-		log.Println(installer)
 		log.Println(httpResponse)
 		log.Println(err)
 		time.Sleep(30 * time.Second)
