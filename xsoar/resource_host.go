@@ -141,6 +141,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		if err == nil {
 			log.Println("installer already exists, skipping to transfer")
 			skipToXfer = true
+			time.Sleep(30 * time.Second)
 		}
 		if err != nil && httpResponse.StatusCode != 404 {
 			log.Println("Error downloading HA installer")
@@ -153,13 +154,21 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				"Error downloading HA installer",
 				"Could not download HA installer: "+err.Error(),
 			)
+			log.Println(httpResponse)
+			log.Println(err)
+			time.Sleep(30 * time.Second)
 			return
 		}
+		log.Println(httpResponse)
+		log.Println(err)
+		time.Sleep(30 * time.Second)
 
 		if !skipToXfer {
 			log.Println("installer doesn't exist, creating")
 			_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
+			log.Println(httpResponse)
 			if err == nil {
+				log.Println(httpResponse)
 				body, bodyErr := io.ReadAll(httpResponse.Body)
 				if bodyErr != nil {
 					log.Println("error reading body: " + bodyErr.Error())
@@ -167,6 +176,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
 			}
 			if err != nil {
+				log.Println(httpResponse)
 				body, bodyErr := io.ReadAll(httpResponse.Body)
 				if bodyErr != nil {
 					log.Println("error reading body: " + bodyErr.Error())
@@ -237,7 +247,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	if !skipToXfer {
 		var err error
 		if isHA {
-			log.Println("Downloading installer")
+			log.Println("Downloading HA installer")
 			installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
