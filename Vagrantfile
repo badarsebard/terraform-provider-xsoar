@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
       v.cpus = 2
     end
     elastic.vm.provision :hosts, :sync_hosts => true
-    elastic.vm.network "private_network", ip: "192.168.33.9"
+    elastic.vm.network "private_network", ip: "192.168.56.9"
     elastic.vm.provision "shell", path: ".run/provision_elastic.sh"
   end
 
@@ -23,7 +23,7 @@ Vagrant.configure("2") do |config|
       v.cpus = 2
     end
     main.vm.provision :hosts, :sync_hosts => true
-    main.vm.network "private_network", ip: "192.168.33.10"
+    main.vm.network "private_network", ip: "192.168.56.10"
     main.vm.provision "shell", path: ".run/provision_main.sh"
   end
 
@@ -35,7 +35,7 @@ Vagrant.configure("2") do |config|
      v.cpus = 1
     end
     host.vm.provision :hosts, :sync_hosts => true
-    host.vm.network "private_network", ip: "192.168.33.11"
+    host.vm.network "private_network", ip: "192.168.56.11"
     host.vm.provision "shell", path: ".run/provision_host.sh"
   end
 
@@ -47,7 +47,7 @@ Vagrant.configure("2") do |config|
       v.cpus = 1
     end
     host.vm.provision :hosts, :sync_hosts => true
-    host.vm.network "private_network", ip: "192.168.33.12"
+    host.vm.network "private_network", ip: "192.168.56.12"
     host.vm.provision "shell", path: ".run/provision_host.sh"
   end
 
@@ -59,7 +59,7 @@ Vagrant.configure("2") do |config|
       v.cpus = 1
     end
     host.vm.provision :hosts, :sync_hosts => true
-    host.vm.network "private_network", ip: "192.168.33.13"
+    host.vm.network "private_network", ip: "192.168.56.13"
     host.vm.synced_folder ENV['HOME']+"/.terraform.d", "/home/vagrant/.terraform.d"
   end
 

@@ -263,7 +263,7 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 	var roles []attr.Value
 	for _, detail := range details {
 		castDetail := detail.(map[string]interface{})
-		if account["name"].(string) == castDetail["name"].(string) {
+		if castDetail["name"] != nil && account["name"].(string) == castDetail["name"].(string) {
 			roleObjects := castDetail["roles"].([]interface{})
 			for _, roleObject := range roleObjects {
 				roleName := roleObject.(map[string]interface{})["name"]
@@ -554,12 +554,14 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 	if account["propagationLabels"] != nil {
 		propagationLabels = []attr.Value{}
 	} else {
-		for _, prop := range account["propagationLabels"].([]interface{}) {
-			propagationLabels = append(propagationLabels, types.String{
-				Unknown: false,
-				Null:    false,
-				Value:   prop.(string),
-			})
+		if account["propagationLabels"] != nil {
+			for _, prop := range account["propagationLabels"].([]interface{}) {
+				propagationLabels = append(propagationLabels, types.String{
+					Unknown: false,
+					Null:    false,
+					Value:   prop.(string),
+				})
+			}
 		}
 	}
 
