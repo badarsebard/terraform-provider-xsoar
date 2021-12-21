@@ -368,7 +368,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	select {
 	case _ = <-c1:
 		break
-	case <-time.After(60 * time.Second):
+	case <-time.After(300 * time.Second):
 		resp.Diagnostics.AddError(
 			"Error getting host",
 			"Could not get host before timeout",
@@ -620,15 +620,19 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	}
 
 	// 3) Transfer installer to host server
+	var ignoreHostKey ssh.HostKeyCallback
+	ignoreHostKey = ssh.InsecureIgnoreHostKey()
 	clientConfig, _ := auth.PrivateKey(
 		state.SSHUser.Value,
 		state.SSHKeyFile.Value,
-		ssh.InsecureIgnoreHostKey(),
+		ignoreHostKey,
 	)
 	client := scp.NewClient(state.ServerUrl.Value, &clientConfig)
 
 	err = client.Connect()
 	if err != nil {
+		log.Println(err)
+		log.Println(clientConfig)
 		resp.Diagnostics.AddError(
 			"Error creating scp connection",
 			"Could not create scp connection: "+err.Error(),
