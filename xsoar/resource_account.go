@@ -520,20 +520,31 @@ func (r resourceAccount) Delete(ctx context.Context, req tfsdk.DeleteResourceReq
 		return
 	}
 
-	// Get order ID from state
 	accName := "acc_" + state.Name.Value
 
-	// Delete order by calling API
-	_, _, err := r.p.client.DefaultApi.DeleteAccount(ctx, accName).Execute()
+	err := resource.RetryContext(ctx, 300*time.Second, func() *resource.RetryError {
+		// Get account current value
+		account, _, _ := r.p.client.DefaultApi.GetAccount(ctx, accName).Execute()
+		if account != nil {
+			_, httpResponse, err := r.p.client.DefaultApi.DeleteAccount(ctx, accName).Execute()
+			if err != nil {
+				body, bodyErr := io.ReadAll(httpResponse.Body)
+				if bodyErr != nil {
+					log.Println("error reading body: " + bodyErr.Error())
+				}
+				log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+				return resource.RetryableError(fmt.Errorf("error deleting instance: %s", err))
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting account",
-			"Could not delete account "+state.Name.Value+": "+err.Error(),
+			"Could not delete account: "+err.Error(),
 		)
 		return
 	}
-
-	// Remove resource from state
 	resp.State.RemoveResource(ctx)
 }
 

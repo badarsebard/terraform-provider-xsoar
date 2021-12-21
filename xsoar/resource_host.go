@@ -314,6 +314,9 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	if isElastic && !isHA {
 		args = append(args, "-elasticsearch-url="+plan.ElasticsearchUrl.Value)
 	}
+	if isHA {
+		args = append(args, "-temp-folder=/tmp/demisto -ha")
+	}
 	argsString := strings.Join(args, " ")
 
 	err = session.Run("sudo /tmp/installer.sh -- " + argsString)
@@ -649,7 +652,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	}
 	defer session.Close()
 
-	err = session.Run("sudo /tmp/installer.sh -- -purge -y")
+	err = session.Run("sudo /tmp/installer.sh -- -purge -y &> demisto_uninstall.log")
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error running installer",
