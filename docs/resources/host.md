@@ -12,11 +12,11 @@ Host resource in the Terraform provider XSOAR.
 ## Example Usage
 
 ```terraform
-resource "host" "example" {
+resource "xsoar_host" "example" {
   name = "foobar"
   server_url = "hostname.bar:22"
   ssh_user = "sshuser"
-  ssh_key_file = "/home/sshuser/.ssh/id_rsa"
+  ssh_key = file("/home/sshuser/.ssh/id_rsa")
 }
 
 resource "xsoar_host" "es_example" {
@@ -24,15 +24,15 @@ resource "xsoar_host" "es_example" {
   elasticsearch_url = "http://elastic.foo:9200"
   server_url = "hostname.bar:22"
   ssh_user = "sshuser"
-  ssh_key_file = "/home/sshuser/.ssh/id_rsa"
+  ssh_key = file("/home/sshuser/.ssh/id_rsa")
 }
 
-resource "host" "ha_example" {
+resource "xsoar_host" "ha_example" {
   name = "hostname"
   ha_group_name = "foo"
   server_url = "hostname.foo:22"
   ssh_user = "sshuser"
-  ssh_key_file = "/home/sshuser/.ssh/id_rsa"
+  ssh_key = file("/home/sshuser/.ssh/id_rsa")
 }
 
 resource "ha_group" "ha_group_example" {
@@ -46,7 +46,7 @@ resource "ha_group" "ha_group_example" {
 - **name** (String) Name of the host, will be used as XSOAR "external address"
 - **server_url** (String) URL and port of the host for an SSH connection
 - **ssh_user** (String) Username for the SSH connection
-- **ssh_key_file** (String) Path to the SSH private key
+- **ssh_key** (String) SSH private key content
 
 ### Optional
 - **ha_group_name** (String, Optional) The name of the HA group this host belongs to.

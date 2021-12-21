@@ -30,7 +30,7 @@ type Host struct {
 	ElasticsearchUrl types.String `tfsdk:"elasticsearch_url"`
 	ServerUrl        types.String `tfsdk:"server_url"`
 	SSHUser          types.String `tfsdk:"ssh_user"`
-	SSHKeyFile       types.String `tfsdk:"ssh_key_file"`
+	SSHKey           types.String `tfsdk:"ssh_key"`
 }
 
 // IntegrationInstance -

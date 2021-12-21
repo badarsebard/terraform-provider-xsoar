@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"github.com/bramvdbogaerde/go-scp"
-	"github.com/bramvdbogaerde/go-scp/auth"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -55,7 +53,7 @@ func (r resourceHostType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 				Type:     types.StringType,
 				Required: true,
 			},
-			"ssh_key_file": {
+			"ssh_key": {
 				Type:     types.StringType,
 				Required: true,
 			},
@@ -258,11 +256,14 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	// 3) Transfer installer to host server
 	log.Println("Creating SSH connection")
-	clientConfig, _ := auth.PrivateKey(
-		plan.SSHUser.Value,
-		plan.SSHKeyFile.Value,
-		ssh.InsecureIgnoreHostKey(),
-	)
+	signer, _ := ssh.ParsePrivateKey([]byte(plan.SSHKey.Value))
+	clientConfig := ssh.ClientConfig{
+		User: plan.SSHUser.Value,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
 	client := scp.NewClient(plan.ServerUrl.Value, &clientConfig)
 
 	err = client.Connect()
@@ -287,30 +288,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	// 4) Execute installer
 	log.Println("Executing install")
-	puKeyFile, err := ioutil.ReadFile(plan.SSHKeyFile.Value)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error reading key file",
-			"Could not read key file: "+err.Error(),
-		)
-		return
-	}
-	pubKey, err := ssh.ParsePrivateKey(puKeyFile)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error parsing key file",
-			"Could not parse key file: "+err.Error(),
-		)
-		return
-	}
-	config := &ssh.ClientConfig{
-		User: plan.SSHUser.Value,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(pubKey),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-	conn, err := ssh.Dial("tcp", plan.ServerUrl.Value, config)
+	conn, err := ssh.Dial("tcp", plan.ServerUrl.Value, &clientConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating ssh connection",
@@ -415,7 +393,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 	result.ServerUrl = plan.ServerUrl
 	result.SSHUser = plan.SSHUser
-	result.SSHKeyFile = plan.SSHKeyFile
+	result.SSHKey = plan.SSHKey
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
@@ -503,7 +481,7 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 
 	result.ServerUrl = state.ServerUrl
 	result.SSHUser = state.SSHUser
-	result.SSHKeyFile = state.SSHKeyFile
+	result.SSHKey = state.SSHKey
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
@@ -620,13 +598,14 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	}
 
 	// 3) Transfer installer to host server
-	var ignoreHostKey ssh.HostKeyCallback
-	ignoreHostKey = ssh.InsecureIgnoreHostKey()
-	clientConfig, _ := auth.PrivateKey(
-		state.SSHUser.Value,
-		state.SSHKeyFile.Value,
-		ignoreHostKey,
-	)
+	signer, _ := ssh.ParsePrivateKey([]byte(state.SSHKey.Value))
+	clientConfig := ssh.ClientConfig{
+		User: state.SSHUser.Value,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
 	client := scp.NewClient(state.ServerUrl.Value, &clientConfig)
 
 	err = client.Connect()
@@ -651,30 +630,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	}
 
 	// 4) Execute installer
-	puKeyFile, err := ioutil.ReadFile(state.SSHKeyFile.Value)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error reading key file",
-			"Could not read key file: "+err.Error(),
-		)
-		return
-	}
-	pubKey, err := ssh.ParsePrivateKey(puKeyFile)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error parsing key file",
-			"Could not parse key file: "+err.Error(),
-		)
-		return
-	}
-	config := &ssh.ClientConfig{
-		User: state.SSHUser.Value,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(pubKey),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-	conn, err := ssh.Dial("tcp", state.ServerUrl.Value, config)
+	conn, err := ssh.Dial("tcp", state.ServerUrl.Value, &clientConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating ssh connection",

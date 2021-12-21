@@ -24,7 +24,7 @@ resource "xsoar_host" "host1" {
   ha_group_name = xsoar_ha_group.ha1.name
   server_url    = "host1.xsoar.local:22"
   ssh_user      = "vagrant"
-  ssh_key_file  = "/path/to/file"
+  ssh_key       = file("/path/to/file")
 }
 
 resource "xsoar_account" "acc1" {
