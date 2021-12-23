@@ -21,6 +21,7 @@ func New() tfsdk.Provider {
 type provider struct {
 	configured bool
 	client     *openapi.APIClient
+	data       *providerData
 }
 
 // GetSchema
@@ -134,6 +135,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 
 	p.client = c
 	p.configured = true
+	p.data = &config
 }
 
 // GetResources - Defines provider resources

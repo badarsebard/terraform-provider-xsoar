@@ -3,7 +3,7 @@ package xsoar
 import (
 	"bytes"
 	"context"
-	"github.com/bramvdbogaerde/go-scp"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -11,7 +11,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -105,16 +104,34 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	} else {
 		isElastic = false
 	}
-	// Creation is a multi-step process
-	// 1) Trigger or confirm the build of the host installer
-	log.Println("Trigger or confirm build of host installer")
-	var haGroupId string
-	var skipToXfer = false
-	var installer *os.File
+
+	// 1) connect to host server over ssh
+	apikey := r.p.data.Apikey
+	mainhost := r.p.data.MainHost
+	signer, _ := ssh.ParsePrivateKey([]byte(plan.SSHKey.Value))
+	clientConfig := ssh.ClientConfig{
+		User: plan.SSHUser.Value,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	conn, err := ssh.Dial("tcp", plan.ServerUrl.Value, &clientConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating ssh connection",
+			"Could not create ssh connection: "+err.Error(),
+		)
+		return
+	}
+	defer conn.Close()
+
+	// 2) query main server with /host/build
+	var haGroup string
 	var httpResponse *http.Response
-	var err error
 	if isHA {
 		var haGroups []map[string]interface{}
+		var haGroupId string
 		log.Println("List ha groups")
 		haGroups, _, err = r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 		if err != nil {
@@ -127,177 +144,91 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		for _, group := range haGroups {
 			if group["name"].(string) == plan.HAGroupName.Value {
 				haGroupId = group["id"].(string)
+				haGroup = "/" + haGroupId
 			}
 		}
-
-		// check if installer already exists
-		log.Println("Get HA installer")
-		installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
-		if err == nil {
-			log.Println("installer already exists, skipping to transfer")
-			skipToXfer = true
-		}
-		if err != nil && httpResponse.StatusCode != 404 {
-			log.Println("Error downloading HA installer")
+		_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
+		if err != nil {
 			body, bodyErr := io.ReadAll(httpResponse.Body)
 			if bodyErr != nil {
 				log.Println("error reading body: " + bodyErr.Error())
+				return
 			}
 			log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
-			resp.Diagnostics.AddError(
-				"Error downloading HA installer",
-				"Could not download HA installer: "+err.Error(),
-			)
-			return
-		}
-
-		if !skipToXfer {
-			log.Println("installer doesn't exist, creating")
-			_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
-			if err == nil {
-				body, bodyErr := io.ReadAll(httpResponse.Body)
-				if bodyErr != nil {
-					log.Println("error reading body: " + bodyErr.Error())
-				}
-				log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
-			}
-			if err != nil {
-				body, bodyErr := io.ReadAll(httpResponse.Body)
-				if bodyErr != nil {
-					log.Println("error reading body: " + bodyErr.Error())
-					return
-				}
-				log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
-				i := bytes.Index(body, []byte("Already building host for ha group"))
-				if i > -1 {
-					var retry = true
-					for retry {
-						installer, httpResponse, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
-						if err == nil {
-							skipToXfer = true
-							break
-						}
-						if httpResponse.StatusCode != 404 {
-							retry = false
-							return
-						}
+			i := bytes.Index(body, []byte("Already building host for ha group"))
+			if i > -1 {
+				for true {
+					_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
+					if err == nil {
+						break
 					}
-				} else {
-					resp.Diagnostics.AddError(
-						"Error creating HA installer",
-						"Could not create HA installer: "+err.Error(),
-					)
-					return
 				}
+			} else {
+				resp.Diagnostics.AddError(
+					"Error creating HA installer",
+					"Could not create HA installer: "+err.Error(),
+				)
+				return
 			}
 		}
 	} else {
-		log.Println("Downloading installer")
-		installer, httpResponse, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
-		if err == nil {
-			skipToXfer = true
-		}
-
-		if !skipToXfer {
-			log.Println("Attempting to create installer")
-			_, _, err := r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
-			if err != nil {
-				var body []byte
-				_, err := httpResponse.Body.Read(body)
-				i := bytes.Index(body, []byte("Already building host for ha group"))
-				if i > -1 {
-					var retry = true
-					for retry {
-						log.Println("Downloading installer")
-						installer, httpResponse, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
-						if err == nil {
-							skipToXfer = true
-						}
-						if httpResponse.StatusCode != 404 {
-							retry = false
-						}
+		_, _, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
+		if err != nil {
+			body, bodyErr := io.ReadAll(httpResponse.Body)
+			if bodyErr != nil {
+				log.Println("error reading body: " + bodyErr.Error())
+				return
+			}
+			log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+			i := bytes.Index(body, []byte("Already building host for ha group"))
+			if i > -1 {
+				for true {
+					_, httpResponse, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
+					if err == nil {
+						break
 					}
-				} else {
-					resp.Diagnostics.AddError(
-						"Error creating host installer",
-						"Could not create host installer: "+err.Error(),
-					)
-					return
 				}
-			}
-		}
-	}
-
-	// 2) Download the installer
-	if !skipToXfer {
-		var err error
-		if isHA {
-			log.Println("Downloading HA installer")
-			installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
-			if err != nil {
+			} else {
 				resp.Diagnostics.AddError(
-					"Error downloading HA installer",
-					"Could not download HA installer: "+err.Error(),
-				)
-				return
-			}
-		} else {
-			log.Println("Downloading installer")
-			installer, _, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Error downloading host installer",
-					"Could not download host installer: "+err.Error(),
+					"Error creating host installer",
+					"Could not create host installer: "+err.Error(),
 				)
 				return
 			}
 		}
 	}
 
-	// 3) Transfer installer to host server
-	log.Println("Creating SSH connection")
-	signer, _ := ssh.ParsePrivateKey([]byte(plan.SSHKey.Value))
-	clientConfig := ssh.ClientConfig{
-		User: plan.SSHUser.Value,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-	client := scp.NewClient(plan.ServerUrl.Value, &clientConfig)
-
-	err = client.Connect()
+	// 3) download installer
+	session, err := conn.NewSession()
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating scp connection",
-			"Could not create scp connection: "+err.Error(),
+			"Error creating ssh session",
+			"Could not create ssh session: "+err.Error(),
 		)
 		return
 	}
-	defer client.Close()
+	defer session.Close()
 
-	log.Println("Copying installer")
-	err = client.CopyFile(installer, "/tmp/installer.sh", "0755")
+	insecure := ""
+	if r.p.data.Insecure.Value {
+		insecure = "-k"
+	}
+	cmd := fmt.Sprintf(
+		"sudo curl -s -o '/tmp/installer.sh' -H 'Authorization: %s' %s %s/host/download%s && "+
+			"sudo chmod +x /tmp/installer.sh",
+		apikey.Value, insecure, mainhost.Value, haGroup)
+	err = session.Run(cmd)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error copying file",
-			"Could not copy file: "+err.Error(),
+			"Error downloading installer",
+			"Could not download installer: "+err.Error(),
 		)
 		return
 	}
 
 	// 4) Execute installer
 	log.Println("Executing install")
-	conn, err := ssh.Dial("tcp", plan.ServerUrl.Value, &clientConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating ssh connection",
-			"Could not create ssh connection: "+err.Error(),
-		)
-		return
-	}
-	defer conn.Close()
-	session, err := conn.NewSession()
+	session, err = conn.NewSession()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating ssh session",
@@ -315,7 +246,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		args = append(args, "-elasticsearch-url="+plan.ElasticsearchUrl.Value)
 	}
 	if isHA {
-		args = append(args, "-temp-folder=/tmp/demisto -ha")
+		args = append(args, "-temp-folder=/tmp/demisto")
 	}
 	argsString := strings.Join(args, " ")
 
@@ -362,7 +293,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	var hostId = host["id"].(string)
 	var hostGroupId = host["hostGroupId"].(string)
 
-	haGroup, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
+	haGroupName, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
@@ -378,9 +309,9 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		Id:   types.String{Value: hostId},
 	}
 
-	if host["host"].(string) != haGroup.GetName() {
+	if host["host"].(string) != haGroupName.GetName() {
 		isHA = true
-		result.HAGroupName.Value = haGroup.GetName()
+		result.HAGroupName.Value = haGroupName.GetName()
 	} else {
 		result.HAGroupName.Null = true
 	}
@@ -541,11 +472,36 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 		isHA = false
 	}
 
-	// Delete Host by calling API
-	// 1) Trigger or confirm the build of the host installer
-	var haGroupId string
+	// Delete Host
+	// 1) connect to host server over ssh
+	apikey := r.p.data.Apikey
+	mainhost := r.p.data.MainHost
+	signer, _ := ssh.ParsePrivateKey([]byte(state.SSHKey.Value))
+	clientConfig := ssh.ClientConfig{
+		User: state.SSHUser.Value,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	conn, err := ssh.Dial("tcp", state.ServerUrl.Value, &clientConfig)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating ssh connection",
+			"Could not create ssh connection: "+err.Error(),
+		)
+		return
+	}
+	defer conn.Close()
+
+	// 2) query main server with /host/build
+	var haGroup string
+	var httpResponse *http.Response
 	if isHA {
-		haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
+		var haGroups []map[string]interface{}
+		var haGroupId string
+		log.Println("List ha groups")
+		haGroups, _, err = r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error listing HA groups",
@@ -556,92 +512,61 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 		for _, group := range haGroups {
 			if group["name"].(string) == state.HAGroupName.Value {
 				haGroupId = group["id"].(string)
+				haGroup = "/" + haGroupId
 			}
 		}
-		_, _, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
+		_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating HA installer",
-				"Could not create HA installer: "+err.Error(),
-			)
-			return
+			body, bodyErr := io.ReadAll(httpResponse.Body)
+			if bodyErr != nil {
+				log.Println("error reading body: " + bodyErr.Error())
+				return
+			}
+			log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+			i := bytes.Index(body, []byte("Already building host for ha group"))
+			if i > -1 {
+				for true {
+					_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
+					if err == nil {
+						break
+					}
+				}
+			} else {
+				resp.Diagnostics.AddError(
+					"Error creating HA installer",
+					"Could not create HA installer: "+err.Error(),
+				)
+				return
+			}
 		}
 	} else {
-		_, _, err := r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
+		_, _, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating host installer",
-				"Could not create host installer: "+err.Error(),
-			)
-			return
+			body, bodyErr := io.ReadAll(httpResponse.Body)
+			if bodyErr != nil {
+				log.Println("error reading body: " + bodyErr.Error())
+				return
+			}
+			log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+			i := bytes.Index(body, []byte("Already building host for ha group"))
+			if i > -1 {
+				for true {
+					_, httpResponse, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
+					if err == nil {
+						break
+					}
+				}
+			} else {
+				resp.Diagnostics.AddError(
+					"Error creating host installer",
+					"Could not create host installer: "+err.Error(),
+				)
+				return
+			}
 		}
 	}
 
-	// 2) Download the installer
-	var installer *os.File
-	var err error
-	if isHA {
-		installer, _, err = r.p.client.DefaultApi.GetHAInstaller(ctx, haGroupId).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error downloading HA installer",
-				"Could not download HA installer: "+err.Error(),
-			)
-			return
-		}
-	} else {
-		installer, _, err = r.p.client.DefaultApi.GetHostInstaller(ctx).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error downloading host installer",
-				"Could not download host installer: "+err.Error(),
-			)
-			return
-		}
-	}
-
-	// 3) Transfer installer to host server
-	signer, _ := ssh.ParsePrivateKey([]byte(state.SSHKey.Value))
-	clientConfig := ssh.ClientConfig{
-		User: state.SSHUser.Value,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-	client := scp.NewClient(state.ServerUrl.Value, &clientConfig)
-
-	err = client.Connect()
-	if err != nil {
-		log.Println(err)
-		log.Println(clientConfig)
-		resp.Diagnostics.AddError(
-			"Error creating scp connection",
-			"Could not create scp connection: "+err.Error(),
-		)
-		return
-	}
-	defer client.Close()
-
-	err = client.CopyFile(installer, "/tmp/installer.sh", "0755")
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error copying file",
-			"Could not copy file: "+err.Error(),
-		)
-		return
-	}
-
-	// 4) Execute installer
-	conn, err := ssh.Dial("tcp", state.ServerUrl.Value, &clientConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating ssh connection",
-			"Could not create ssh connection: "+err.Error(),
-		)
-		return
-	}
-	defer conn.Close()
+	// 3) download installer
 	session, err := conn.NewSession()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -652,7 +577,35 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	}
 	defer session.Close()
 
-	err = session.Run("sudo /tmp/installer.sh -- -purge -y &> demisto_uninstall.log")
+	insecure := ""
+	if r.p.data.Insecure.Value {
+		insecure = "-k"
+	}
+	cmd := fmt.Sprintf(
+		"sudo curl -s -o '/tmp/installer.sh' -H 'Authorization: %s' %s %s/host/download%s && "+
+			"sudo chmod +x /tmp/installer.sh",
+		apikey.Value, insecure, mainhost.Value, haGroup)
+	err = session.Run(cmd)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error downloading installer",
+			"Could not download installer: "+err.Error(),
+		)
+		return
+	}
+
+	// 4) Execute installer
+	session, err = conn.NewSession()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating ssh session",
+			"Could not create ssh session: "+err.Error(),
+		)
+		return
+	}
+	defer session.Close()
+
+	err = session.Run("sudo /tmp/installer.sh -- -purge -y")
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error running installer",
