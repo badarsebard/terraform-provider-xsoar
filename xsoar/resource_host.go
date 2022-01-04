@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
@@ -116,14 +117,16 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	conn, err := ssh.Dial("tcp", plan.ServerUrl.Value, &clientConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating ssh connection",
-			"Could not create ssh connection: "+err.Error(),
-		)
-		return
-	}
+	var conn *ssh.Client
+	var err error
+	err = resource.RetryContext(ctx, 300*time.Second, func() *resource.RetryError {
+		var conErr error
+		conn, conErr = ssh.Dial("tcp", plan.ServerUrl.Value, &clientConfig)
+		if conErr != nil {
+			return resource.RetryableError(fmt.Errorf("error connecting to host over ssh: " + conErr.Error()))
+		}
+		return nil
+	})
 	defer conn.Close()
 
 	// 2) query main server with /host/build
@@ -484,14 +487,16 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	conn, err := ssh.Dial("tcp", state.ServerUrl.Value, &clientConfig)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating ssh connection",
-			"Could not create ssh connection: "+err.Error(),
-		)
-		return
-	}
+	var conn *ssh.Client
+	var err error
+	err = resource.RetryContext(ctx, 300*time.Second, func() *resource.RetryError {
+		var conErr error
+		conn, conErr = ssh.Dial("tcp", state.ServerUrl.Value, &clientConfig)
+		if conErr != nil {
+			return resource.RetryableError(fmt.Errorf("error connecting to host over ssh: " + conErr.Error()))
+		}
+		return nil
+	})
 	defer conn.Close()
 
 	// 2) query main server with /host/build
