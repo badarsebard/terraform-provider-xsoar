@@ -6,6 +6,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"io"
+	"log"
+	"net/http"
 	"strings"
 )
 
@@ -92,28 +95,37 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	var moduleInstance = make(map[string]interface{})
 	configurations := integrations["configurations"].([]interface{})
 	for _, configuration := range configurations {
-		if config := configuration.(map[string]interface{}); config["name"].(string) == plan.IntegrationName.Value {
+		config := configuration.(map[string]interface{})
+		log.Println(config["name"])
+		if config["name"].(string) == plan.IntegrationName.Value {
+			log.Println("found match")
 			moduleConfiguration = config["configuration"].([]interface{})
 			moduleInstance["brand"] = config["name"].(string)
-			moduleInstance["canSample"] = false
+			moduleInstance["canSample"] = config["canGetSamples"].(bool)
 			moduleInstance["category"] = config["category"].(string)
 			moduleInstance["configuration"] = configuration
 			moduleInstance["data"] = make([]map[string]interface{}, 0)
-			moduleInstance["defultIgnore"] = false
+			moduleInstance["defaultIgnore"] = false
 			moduleInstance["enabled"] = "true"
-			moduleInstance["engine"] = "" // todo: add this as a config option
-			moduleInstance["engineGroup"] = ""
-			moduleInstance["id"] = ""
-			moduleInstance["incomingMapperId"] = ""
-			moduleInstance["integrationLogLevel"] = ""
-			moduleInstance["isIntegrationScript"] = false // todo: add this as a config option (byoi)
-			moduleInstance["isLongRunning"] = false
-			moduleInstance["mappingId"] = ""
+			// todo: add this as a config option
+			//moduleInstance["engine"] = ""
+			//moduleInstance["engineGroup"] = ""
+			//moduleInstance["id"] = ""
+			//moduleInstance["incomingMapperId"] = ""
+			//moduleInstance["integrationLogLevel"] = ""
+			// todo: add this as a config option (byoi)
+			var isIntegrationScript bool
+			if val, ok := config["integrationScript"]; ok && val != nil {
+				isIntegrationScript = true
+			}
+			moduleInstance["isIntegrationScript"] = isIntegrationScript
+			//moduleInstance["isLongRunning"] = false
+			//moduleInstance["mappingId"] = ""
 			moduleInstance["name"] = plan.Name.Value
-			moduleInstance["outgoingMapperId"] = ""
-			moduleInstance["passwordProtected"] = false
+			//moduleInstance["outgoingMapperId"] = ""
+			//moduleInstance["passwordProtected"] = false
 			moduleInstance["propagationLabels"] = plan.PropagationLabels
-			moduleInstance["resetContext"] = false
+			//moduleInstance["resetContext"] = false
 			moduleInstance["version"] = -1
 			break
 		}
@@ -135,9 +147,11 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	}
 
 	var integrationsResponse map[string]interface{}
+	var httpResponse *http.Response
 	if plan.Account.Null || len(plan.Account.Value) == 0 {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
+		integrationsResponse, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
+			log.Println(httpResponse)
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
 				"Could not create integration instance: "+err.Error(),
@@ -145,8 +159,14 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			return
 		}
 	} else {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
+		integrationsResponse, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
+			log.Println(httpResponse.Request)
+			log.Println(httpResponse.Request.ContentLength)
+			fml, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(fml)
+			log.Println(string(b))
+			log.Println(httpResponse)
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
 				"Could not create integration instance: "+err.Error(),
@@ -266,28 +286,35 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 	var moduleInstance = make(map[string]interface{})
 	configurations := integrations["configurations"].([]interface{})
 	for _, configuration := range configurations {
-		if config := configuration.(map[string]interface{}); config["name"].(string) == plan.IntegrationName.Value {
+		config := configuration.(map[string]interface{})
+		if config["name"].(string) == plan.IntegrationName.Value {
 			moduleConfiguration = config["configuration"].([]interface{})
 			moduleInstance["brand"] = config["name"].(string)
-			moduleInstance["canSample"] = false
+			moduleInstance["canSample"] = config["canGetSamples"].(bool)
 			moduleInstance["category"] = config["category"].(string)
 			moduleInstance["configuration"] = configuration
 			moduleInstance["data"] = make([]map[string]interface{}, 0)
-			moduleInstance["defultIgnore"] = false
+			moduleInstance["defaultIgnore"] = false
 			moduleInstance["enabled"] = "true"
-			moduleInstance["engine"] = "" // todo: add this as a config option
-			moduleInstance["engineGroup"] = ""
+			// todo: add this as a config option
+			//moduleInstance["engine"] = ""
+			//moduleInstance["engineGroup"] = ""
 			moduleInstance["id"] = state.Id.Value
-			moduleInstance["incomingMapperId"] = ""
-			moduleInstance["integrationLogLevel"] = ""
-			moduleInstance["isIntegrationScript"] = false // todo: add this as a config option (byoi)
-			moduleInstance["isLongRunning"] = false
-			moduleInstance["mappingId"] = ""
+			//moduleInstance["incomingMapperId"] = ""
+			//moduleInstance["integrationLogLevel"] = ""
+			// todo: add this as a config option (byoi)
+			var isIntegrationScript bool
+			if val, ok := config["integrationScript"]; ok && val != nil {
+				isIntegrationScript = true
+			}
+			moduleInstance["isIntegrationScript"] = isIntegrationScript
+			//moduleInstance["isLongRunning"] = false
+			//moduleInstance["mappingId"] = ""
 			moduleInstance["name"] = plan.Name.Value
-			moduleInstance["outgoingMapperId"] = ""
-			moduleInstance["passwordProtected"] = false
+			//moduleInstance["outgoingMapperId"] = ""
+			//moduleInstance["passwordProtected"] = false
 			moduleInstance["propagationLabels"] = plan.PropagationLabels
-			moduleInstance["resetContext"] = false
+			//moduleInstance["resetContext"] = false
 			moduleInstance["version"] = -1
 			break
 		}
@@ -312,8 +339,8 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error creating integration instance",
-				"Could not create integration instance: "+err.Error(),
+				"Error updating integration instance",
+				"Could not update integration instance: "+err.Error(),
 			)
 			return
 		}
@@ -321,8 +348,8 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error creating integration instance",
-				"Could not create integration instance: "+err.Error(),
+				"Error updating integration instance",
+				"Could not update integration instance: "+err.Error(),
 			)
 			return
 		}
@@ -365,8 +392,8 @@ func (r resourceIntegrationInstance) Delete(ctx context.Context, req tfsdk.Delet
 		_, err := r.p.client.DefaultApi.DeleteIntegrationInstance(ctx, state.Id.Value).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error creating integration instance",
-				"Could not create integration instance: "+err.Error(),
+				"Error deleting integration instance",
+				"Could not delete integration instance: "+err.Error(),
 			)
 			return
 		}
@@ -374,8 +401,8 @@ func (r resourceIntegrationInstance) Delete(ctx context.Context, req tfsdk.Delet
 		_, err := r.p.client.DefaultApi.DeleteIntegrationInstanceAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error creating integration instance",
-				"Could not create integration instance: "+err.Error(),
+				"Error deleting integration instance",
+				"Could not delete integration instance: "+err.Error(),
 			)
 			return
 		}

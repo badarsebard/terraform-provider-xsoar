@@ -3,15 +3,17 @@ HOSTNAME=local
 NAMESPACE=badarsebard
 NAME=xsoar
 BINARY=terraform-provider-${NAME}
-VERSION=0.2.0
-OSARCH=${OS_ARCH}
-#OSARCH=linux_amd64
+VERSION=0.2.1
+OS=${OS}
+ARCH=${ARCH}
+#OS=linux
+#ARCH=amd64
 
 default: install
 
 build:
 	go fmt
-	go build -o ${BINARY}
+	GOOS=${OS} GOARCH=${ARCH} go build -o ${BINARY}
 
 release:
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
@@ -28,8 +30,8 @@ release:
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
 install: build
-	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OSARCH}
-	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OSARCH}
+	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS}_${ARCH}
+	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS}_${ARCH}
 	rm -rf examples/.terraform/ examples/.terraform.lock.hcl examples/*.tfstate*
 	rm -rf local/.terraform/ local/.terraform.lock.hcl local/*.tfstate*
 
