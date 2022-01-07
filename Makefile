@@ -4,10 +4,8 @@ NAMESPACE=badarsebard
 NAME=xsoar
 BINARY=terraform-provider-${NAME}
 VERSION=0.2.1
-OS=${OS}
-ARCH=${ARCH}
-#OS=linux
-#ARCH=amd64
+OS=${MY_OS}
+ARCH=${MY_ARCH}
 
 default: install
 
@@ -32,8 +30,9 @@ release:
 install: build
 	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS}_${ARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS}_${ARCH}
-	rm -rf examples/.terraform/ examples/.terraform.lock.hcl examples/*.tfstate*
-	rm -rf local/.terraform/ local/.terraform.lock.hcl local/*.tfstate*
+
+clean: install
+	rm -rf local/.terraform.lock.hcl local/.terraform/ local/*.tfstate*
 
 test:
 	go test -i $(TEST) || exit 1

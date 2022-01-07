@@ -96,9 +96,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	configurations := integrations["configurations"].([]interface{})
 	for _, configuration := range configurations {
 		config := configuration.(map[string]interface{})
-		log.Println(config["name"])
 		if config["name"].(string) == plan.IntegrationName.Value {
-			log.Println("found match")
 			moduleConfiguration = config["configuration"].([]interface{})
 			moduleInstance["brand"] = config["name"].(string)
 			moduleInstance["canSample"] = config["canGetSamples"].(bool)
@@ -140,9 +138,6 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 				break
 			}
 		}
-		if !param["hasvalue"].(bool) {
-			param["value"] = param["defaultValue"].(string)
-		}
 		moduleInstance["data"] = append(moduleInstance["data"].([]map[string]interface{}), param)
 	}
 
@@ -151,7 +146,6 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	if plan.Account.Null || len(plan.Account.Value) == 0 {
 		integrationsResponse, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 		if err != nil {
-			log.Println(httpResponse)
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
 				"Could not create integration instance: "+err.Error(),
@@ -160,13 +154,10 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		}
 	} else {
 		integrationsResponse, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
+		fml, _ := httpResponse.Request.GetBody()
+		b, _ := io.ReadAll(fml)
+		log.Println(string(b))
 		if err != nil {
-			log.Println(httpResponse.Request)
-			log.Println(httpResponse.Request.ContentLength)
-			fml, _ := httpResponse.Request.GetBody()
-			b, _ := io.ReadAll(fml)
-			log.Println(string(b))
-			log.Println(httpResponse)
 			resp.Diagnostics.AddError(
 				"Error creating integration instance",
 				"Could not create integration instance: "+err.Error(),
