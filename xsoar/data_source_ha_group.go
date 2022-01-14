@@ -46,15 +46,15 @@ type dataSourceHAGroup struct {
 }
 
 func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	// Declare struct that this function will set to this data source's state
-	var state HAGroup
-	diags := req.Config.Get(ctx, &state)
+	// Declare struct that this function will set to this data source's config
+	var config HAGroup
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Get HA group from API and then update what is in state from what the API returns
+	// Get HA group from API and then update what is in config from what the API returns
 	haGroups, _, err := r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -64,8 +64,8 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 	var haGroupId string
-	for _, group := range haGroups {
-		if state.Name.Value == group["name"].(string) {
+	for _, group := range haGroups.Items {
+		if config.Name.Value == group["name"].(string) {
 			haGroupId = group["id"].(string)
 			break
 		}
@@ -74,13 +74,13 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
-			"Could not get HA group "+state.Name.Value+": "+err.Error(),
+			"Could not get HA group "+config.Name.Value+": "+err.Error(),
 		)
 		return
 	}
 
 	// Map response body to resource schema attribute
-	state = HAGroup{
+	config = HAGroup{
 		Name:               types.String{Value: haGroup.GetName()},
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
@@ -88,7 +88,7 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

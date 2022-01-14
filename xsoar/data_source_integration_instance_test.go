@@ -44,7 +44,7 @@ func testAccCheckIntegrationInstanceDataSourceDestroy(r string) resource.TestChe
 			return fmt.Errorf("no ID is set")
 		}
 
-		resp, _, err := openapiClient.DefaultApi.GetIntegrationInstance(context.Background()).Identifier(r).Execute()
+		resp, _, err := openapiClient.DefaultApi.GetIntegrationInstance(context.Background()).SetIdentifier(r).Execute()
 		if err != nil {
 			return fmt.Errorf("Error getting integration instance: " + err.Error())
 		}

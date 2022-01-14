@@ -2,7 +2,7 @@ package xsoar
 
 import (
 	"context"
-	"github.com/badarsebard/xsoar-sdk-go/openapi"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -81,9 +81,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 
 	// Create
 	// list integrations
-	size := *openapi.NewInlineObject1()
-	size.SetSize(500)
-	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(ctx).Size(size).Execute()
+	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing integration",
@@ -122,7 +120,9 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			moduleInstance["name"] = plan.Name.Value
 			//moduleInstance["outgoingMapperId"] = ""
 			//moduleInstance["passwordProtected"] = false
-			moduleInstance["propagationLabels"] = plan.PropagationLabels
+			var propLabels []string
+			plan.PropagationLabels.ElementsAs(ctx, propLabels, false)
+			moduleInstance["propagationLabels"] = propLabels
 			//moduleInstance["resetContext"] = false
 			moduleInstance["version"] = -1
 			break
@@ -141,42 +141,44 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		moduleInstance["data"] = append(moduleInstance["data"].([]map[string]interface{}), param)
 	}
 
-	var integrationsResponse map[string]interface{}
+	var integration map[string]interface{}
 	var httpResponse *http.Response
 	if plan.Account.Null || len(plan.Account.Value) == 0 {
-		integrationsResponse, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating integration instance",
-				"Could not create integration instance: "+err.Error(),
-			)
-			return
-		}
+		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 	} else {
-		integrationsResponse, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
-		fml, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(fml)
-		log.Println(string(b))
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating integration instance",
-				"Could not create integration instance: "+err.Error(),
-			)
-			return
-		}
+		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 	}
-	var propLabels []string
-	for _, label := range integrationsResponse["propagationLabels"].([]interface{}) {
-		propLabels = append(propLabels, label.(string))
+	getBody := httpResponse.Body
+	b, _ := io.ReadAll(getBody)
+	log.Println(string(b))
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating integration instance",
+			"Could not create integration instance: "+err.Error(),
+		)
+		return
+	}
+
+	var propagationLabels []attr.Value
+	if integration["propagationLabels"] == nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range integration["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
-		Name:              types.String{Value: integrationsResponse["name"].(string)},
-		Id:                types.String{Value: integrationsResponse["id"].(string)},
-		IntegrationName:   types.String{Value: integrationsResponse["brand"].(string)},
+		Name:              types.String{Value: integration["name"].(string)},
+		Id:                types.String{Value: integration["id"].(string)},
+		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
-		PropagationLabels: propLabels,
+		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
 	}
 
@@ -199,39 +201,45 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 	}
 
 	// Get resource from API
-	var integrationInstance map[string]interface{}
+	var integration map[string]interface{}
+	var httpResponse *http.Response
 	var err error
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).Identifier(state.Id.Value).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error getting integration instance",
-				"Could not get integration instance: "+err.Error(),
-			)
-			return
-		}
+		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).SetIdentifier(state.Id.Value).Execute()
 	} else {
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+state.Account.Value).Identifier(state.Id.Value).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error getting integration instance",
-				"Could not get integration instance: "+err.Error(),
-			)
-			return
-		}
+		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Id.Value).Execute()
 	}
-	var propLabels []string
-	for _, label := range integrationInstance["propagationLabels"].([]interface{}) {
-		propLabels = append(propLabels, label.(string))
+	if err != nil {
+		getBody := httpResponse.Body
+		b, _ := io.ReadAll(getBody)
+		log.Println(string(b))
+		resp.Diagnostics.AddError(
+			"Error getting integration instance",
+			"Could not get integration instance: "+err.Error(),
+		)
+		return
+	}
+
+	var propagationLabels []attr.Value
+	if integration["propagationLabels"] == nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range integration["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
-		Name:              types.String{Value: integrationInstance["name"].(string)},
-		Id:                types.String{Value: integrationInstance["id"].(string)},
-		IntegrationName:   types.String{Value: integrationInstance["brand"].(string)},
+		Name:              types.String{Value: integration["name"].(string)},
+		Id:                types.String{Value: integration["id"].(string)},
+		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           state.Account,
-		PropagationLabels: propLabels,
+		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            state.Config,
 	}
 
@@ -263,9 +271,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 
 	// Build request
 	// list integrations
-	size := *openapi.NewInlineObject1()
-	size.SetSize(500)
-	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(ctx).Size(size).Execute()
+	integrations, _, err := r.p.client.DefaultApi.ListIntegrations(ctx).Execute()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error listing integration",
@@ -325,38 +331,40 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		}
 		moduleInstance["data"] = append(moduleInstance["data"].([]map[string]interface{}), param)
 	}
-	var integrationsResponse map[string]interface{}
+	var integration map[string]interface{}
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error updating integration instance",
-				"Could not update integration instance: "+err.Error(),
-			)
-			return
-		}
+		integration, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 	} else {
-		integrationsResponse, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error updating integration instance",
-				"Could not update integration instance: "+err.Error(),
-			)
-			return
-		}
+		integration, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 	}
-	var propLabels []string
-	for _, label := range integrationsResponse["propagationLabels"].([]interface{}) {
-		propLabels = append(propLabels, label.(string))
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating integration instance",
+			"Could not update integration instance: "+err.Error(),
+		)
+		return
+	}
+
+	var propagationLabels []attr.Value
+	if integration["propagationLabels"] == nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range integration["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
-		Name:              types.String{Value: integrationsResponse["name"].(string)},
-		Id:                types.String{Value: integrationsResponse["id"].(string)},
-		IntegrationName:   types.String{Value: integrationsResponse["brand"].(string)},
+		Name:              types.String{Value: integration["name"].(string)},
+		Id:                types.String{Value: integration["id"].(string)},
+		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
-		PropagationLabels: propLabels,
+		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
 	}
 
@@ -379,24 +387,18 @@ func (r resourceIntegrationInstance) Delete(ctx context.Context, req tfsdk.Delet
 	}
 
 	// Delete
+	var err error
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		_, err := r.p.client.DefaultApi.DeleteIntegrationInstance(ctx, state.Id.Value).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error deleting integration instance",
-				"Could not delete integration instance: "+err.Error(),
-			)
-			return
-		}
+		_, err = r.p.client.DefaultApi.DeleteIntegrationInstance(ctx, state.Id.Value).Execute()
 	} else {
-		_, err := r.p.client.DefaultApi.DeleteIntegrationInstanceAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error deleting integration instance",
-				"Could not delete integration instance: "+err.Error(),
-			)
-			return
-		}
+		_, err = r.p.client.DefaultApi.DeleteIntegrationInstanceAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
+	}
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting integration instance",
+			"Could not delete integration instance: "+err.Error(),
+		)
+		return
 	}
 
 	// Remove resource from state
@@ -407,54 +409,49 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 	var diags diag.Diagnostics
 	accname := strings.Split(req.ID, ".")
 	var acc, name string
-	var integrationInstance map[string]interface{}
+	var integration map[string]interface{}
 	var err error
 	if len(accname) == 1 {
 		name = req.ID
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).Identifier(name).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error getting integration instance",
-				"Could not get integration instance: "+err.Error(),
-			)
-			return
-		}
-		if integrationInstance == nil {
-			resp.Diagnostics.AddError(
-				"Integration instance not found",
-				"Could not find integration instance: "+name,
-			)
-			return
-		}
+		integration, _, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).SetIdentifier(name).Execute()
 	} else {
 		acc, name = accname[0], accname[1]
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+acc).Identifier(name).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error getting integration instance",
-				"Could not get integration instance: "+err.Error(),
-			)
-			return
-		}
-		if integrationInstance == nil {
-			resp.Diagnostics.AddError(
-				"Integration instance not found",
-				"Could not find integration instance: "+name,
-			)
-			return
-		}
+		integration, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+acc).SetIdentifier(name).Execute()
 	}
-	var propLabels []string
-	for _, label := range integrationInstance["propagationLabels"].([]interface{}) {
-		propLabels = append(propLabels, label.(string))
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error getting integration instance",
+			"Could not get integration instance: "+err.Error(),
+		)
+		return
+	}
+	if integration == nil {
+		resp.Diagnostics.AddError(
+			"Integration instance not found",
+			"Could not find integration instance: "+name,
+		)
+		return
+	}
+
+	var propagationLabels []attr.Value
+	if integration["propagationLabels"] == nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range integration["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
-		Name:              types.String{Value: integrationInstance["name"].(string)},
-		Id:                types.String{Value: integrationInstance["id"].(string)},
-		IntegrationName:   types.String{Value: integrationInstance["brand"].(string)},
-		PropagationLabels: propLabels,
+		Name:              types.String{Value: integration["name"].(string)},
+		Id:                types.String{Value: integration["id"].(string)},
+		IntegrationName:   types.String{Value: integration["brand"].(string)},
+		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            types.Map{},
 	}
 

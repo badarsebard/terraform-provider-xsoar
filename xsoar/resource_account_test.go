@@ -91,8 +91,6 @@ func testAccAccountResourceBasic(name string) string {
 resource "xsoar_account" "{name}" {
   name               = "{name}"
   host_group_name    = ""
-  account_roles      = ["Administrator"]
-  propagation_labels = [""]
 }`
 	c = strings.Replace(c, "{name}", name, -1)
 	return c

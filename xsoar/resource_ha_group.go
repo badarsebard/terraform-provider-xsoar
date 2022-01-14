@@ -228,7 +228,7 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 		return
 	}
 	var id string
-	for _, group := range haGroups {
+	for _, group := range haGroups.Items {
 		if group["name"].(string) == name {
 			id = group["id"].(string)
 			break

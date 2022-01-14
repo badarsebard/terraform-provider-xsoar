@@ -99,7 +99,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 	var hostGroupId = ""
-	for _, group := range haGroups {
+	for _, group := range haGroups.Items {
 		if group["name"].(string) == plan.HostGroupName.Value {
 			hostGroupId = group["id"].(string)
 			break
@@ -122,7 +122,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	createAccountRequest.SetSyncOnCreation(true)
 
 	// Create new account
-	var accounts []map[string]interface{}
+	var accounts openapi.AccountsWrapper
 	err = resource.RetryContext(ctx, 300*time.Second, func() *resource.RetryError {
 		var httpResponse *http.Response
 		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
@@ -147,7 +147,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 	// Map response body to resource schema attribute
 	var result Account
-	for _, account := range accounts {
+	for _, account := range accounts.Items {
 		if account["displayName"].(string) == plan.Name.Value {
 			var propagationLabels []attr.Value
 			if account["propagationLabels"] == nil {
@@ -163,7 +163,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 			}
 
 			var hostGroupName string
-			for _, group := range haGroups {
+			for _, group := range haGroups.Items {
 				if group["id"].(string) == account["hostGroupId"].(string) {
 					hostGroupName = group["name"].(string)
 					break
@@ -284,7 +284,7 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		return
 	}
 	var hostGroupName = ""
-	for _, group := range haGroups {
+	for _, group := range haGroups.Items {
 		if group["id"].(string) == account["hostGroupId"].(string) {
 			hostGroupName = group["name"].(string)
 			break
@@ -403,7 +403,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 			return
 		}
 		var targetHostGroupId = ""
-		for _, group := range haGroups {
+		for _, group := range haGroups.Items {
 			if group["name"].(string) == plan.HostGroupName.Value {
 				targetHostGroupId = group["id"].(string)
 				break
@@ -477,7 +477,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		return
 	}
 	var hostGroupName = ""
-	for _, group := range haGroups {
+	for _, group := range haGroups.Items {
 		if group["id"].(string) == account["hostGroupId"].(string) {
 			hostGroupName = group["name"].(string)
 			break
@@ -608,7 +608,7 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 		return
 	}
 	var hostGroupName = ""
-	for _, group := range haGroups {
+	for _, group := range haGroups.Items {
 		if group["id"].(string) == account["hostGroupId"].(string) {
 			hostGroupName = group["name"].(string)
 			break

@@ -6,12 +6,12 @@ import (
 
 // Account -
 type Account struct {
-	AccountRoles      types.List   `tfsdk:"account_roles"`
+	Name              types.String `tfsdk:"name"`
+	Id                types.String `tfsdk:"id"`
 	HostGroupName     types.String `tfsdk:"host_group_name"`
 	HostGroupId       types.String `tfsdk:"host_group_id"`
-	Name              types.String `tfsdk:"name"`
+	AccountRoles      types.List   `tfsdk:"account_roles"`
 	PropagationLabels types.List   `tfsdk:"propagation_labels"`
-	Id                types.String `tfsdk:"id"`
 }
 
 // HAGroup -
@@ -39,6 +39,27 @@ type IntegrationInstance struct {
 	Id                types.String `tfsdk:"id"`
 	IntegrationName   types.String `tfsdk:"integration_name"`
 	Config            types.Map    `tfsdk:"config"`
-	PropagationLabels []string     `tfsdk:"propagation_labels"`
+	PropagationLabels types.List   `tfsdk:"propagation_labels"`
 	Account           types.String `tfsdk:"account"`
+}
+
+// Classifier -
+type Classifier struct {
+	Name                types.String `tfsdk:"name"`
+	Id                  types.String `tfsdk:"id"`
+	DefaultIncidentType types.String `tfsdk:"default_incident_type"`
+	KeyTypeMap          types.String `tfsdk:"key_type_map"`
+	Transformer         types.String `tfsdk:"transformer"`
+	PropagationLabels   types.List   `tfsdk:"propagation_labels"`
+	Account             types.String `tfsdk:"account"`
+}
+
+// Mapper -
+type Mapper struct {
+	Name              types.String `tfsdk:"name"`
+	Id                types.String `tfsdk:"id"`
+	Mapping           types.String `tfsdk:"mapping"`
+	PropagationLabels types.List   `tfsdk:"propagation_labels"`
+	Account           types.String `tfsdk:"account"`
+	Direction         types.String `tfsdk:"direction"`
 }

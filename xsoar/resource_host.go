@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/badarsebard/xsoar-sdk-go/openapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -133,7 +134,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	var haGroup string
 	var httpResponse *http.Response
 	if isHA {
-		var haGroups []map[string]interface{}
+		var haGroups openapi.HAGroups
 		var haGroupId string
 		log.Println("List ha groups")
 		haGroups, _, err = r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
@@ -144,7 +145,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			)
 			return
 		}
-		for _, group := range haGroups {
+		for _, group := range haGroups.Items {
 			if group["name"].(string) == plan.HAGroupName.Value {
 				haGroupId = group["id"].(string)
 				haGroup = "/" + haGroupId
@@ -222,6 +223,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		apikey.Value, insecure, mainhost.Value, haGroup)
 	err = session.Run(cmd)
 	if err != nil {
+
 		resp.Diagnostics.AddError(
 			"Error downloading installer",
 			"Could not download installer: "+err.Error(),
@@ -503,7 +505,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 	var haGroup string
 	var httpResponse *http.Response
 	if isHA {
-		var haGroups []map[string]interface{}
+		var haGroups openapi.HAGroups
 		var haGroupId string
 		log.Println("List ha groups")
 		haGroups, _, err = r.p.client.DefaultApi.ListHAGroups(ctx).Execute()
@@ -514,7 +516,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 			)
 			return
 		}
-		for _, group := range haGroups {
+		for _, group := range haGroups.Items {
 			if group["name"].(string) == state.HAGroupName.Value {
 				haGroupId = group["id"].(string)
 				haGroup = "/" + haGroupId
@@ -592,6 +594,7 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 		apikey.Value, insecure, mainhost.Value, haGroup)
 	err = session.Run(cmd)
 	if err != nil {
+		fmt.Println(cmd)
 		resp.Diagnostics.AddError(
 			"Error downloading installer",
 			"Could not download installer: "+err.Error(),

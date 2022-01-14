@@ -3,7 +3,7 @@ HOSTNAME=local
 NAMESPACE=badarsebard
 NAME=xsoar
 BINARY=terraform-provider-${NAME}
-VERSION=0.2.1
+VERSION=0.3.0
 OS=${MY_OS}
 ARCH=${MY_ARCH}
 
@@ -39,4 +39,4 @@ test:
 	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
 
 testacc:
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS)

@@ -1,29 +1,26 @@
 ---
-page_title: "$template$ Data Source - terraform-provider-xsoar"
+page_title: "xsoar_integration_instance Data Source - terraform-provider-xsoar"
 subcategory: ""
 description: |-
-$template$ data source in the Terraform provider XSOAR.
+xsoar_integration_instance data source in the Terraform provider XSOAR.
 ---
 
-# Data Source `$templaate$`
+# Data Source xsoar_integration_instance
 
-$template$ data source in the Terraform provider XSOAR.
+Integration instance data source in the Terraform provider XSOAR.
 
 ## Example Usage
-
 ```terraform
-data "$template$" "example" {
-  sample_attribute = "foo"
+data "xsoar_integration_instance" "example" {
+  name = "foo"
 }
 ```
 
-## Schema
+## Argument Reference
+- **name** (Required) The name of the integration_instance.
 
-### Required
-
-- **sample_attribute** (String, Required) Sample attribute.
-
-### Optional
-
-- **id** (String, Optional) The ID of this resource.
-
+## Attributes Reference
+- **id** The ID of the resource.
+- **integration_name** The name of the integration to be used. This represents the kind of integration to be configured, not the individual instance.
+- **account** The name of the multi-tenant account for the instance of the integration.
+- **propagation_labels** A list of strings to apply to the resource as propagation labels.

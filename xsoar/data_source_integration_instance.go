@@ -2,10 +2,13 @@ package xsoar
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"io"
 	"log"
+	"net/http"
 )
 
 type dataSourceIntegrationInstanceType struct{}
@@ -27,11 +30,6 @@ func (r dataSourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.S
 				Computed: true,
 				Optional: false,
 			},
-			"config": {
-				Type:     types.MapType{ElemType: types.StringType},
-				Computed: true,
-				Optional: false,
-			},
 			"propagation_labels": {
 				Type:     types.ListType{ElemType: types.StringType},
 				Computed: true,
@@ -40,6 +38,11 @@ func (r dataSourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.S
 			"account": {
 				Type:     types.StringType,
 				Optional: true,
+			},
+			"config": {
+				Type:     types.MapType{ElemType: types.StringType},
+				Optional: false,
+				Computed: true,
 			},
 		},
 	}, nil
@@ -56,64 +59,59 @@ type dataSourceIntegrationInstance struct {
 }
 
 func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	// Declare struct that this function will set to this data source's state
-	var state IntegrationInstance
-	diags := req.Config.Get(ctx, &state)
+	// Get current config
+	var config IntegrationInstance
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Get resource from API
-	var integrationInstance map[string]interface{}
+	var integration map[string]interface{}
+	var httpResponse *http.Response
 	var err error
-	if state.Account.Null || len(state.Account.Value) == 0 {
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).Identifier(state.Name.Value).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error getting integration instance",
-				"Could not get integration instance: "+err.Error(),
-			)
-			return
-		}
-		if integrationInstance == nil {
-			resp.Diagnostics.AddError(
-				"Integration instance not found",
-				"Could not find integration instance: "+state.Name.Value,
-			)
-			return
-		}
+	if config.Account.Null || len(config.Account.Value) == 0 {
+		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).SetIdentifier(config.Name.Value).Execute()
 	} else {
-		integrationInstance, _, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+state.Account.Value).Identifier(state.Name.Value).Execute()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error getting integration instance",
-				"Could not get integration instance: "+err.Error(),
-			)
-			return
-		}
-		if integrationInstance == nil {
-			resp.Diagnostics.AddError(
-				"Integration instance not found",
-				"Could not find integration instance: "+state.Name.Value,
-			)
-			return
-		}
+		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+config.Account.Value).SetIdentifier(config.Name.Value).Execute()
 	}
-	log.Println(integrationInstance)
-	var propLabels []string
-	for _, label := range integrationInstance["propagationLabels"].([]interface{}) {
-		propLabels = append(propLabels, label.(string))
+	if err != nil {
+		getBody := httpResponse.Body
+		b, _ := io.ReadAll(getBody)
+		log.Println(string(b))
+		resp.Diagnostics.AddError(
+			"Error getting integration instance",
+			"Could not get integration instance: "+err.Error(),
+		)
+		return
+	}
+
+	var propagationLabels []attr.Value
+	if integration["propagationLabels"] == nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, prop := range integration["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
+		}
 	}
 
 	// Map response body to resource schema attribute
-	state.Name = types.String{Value: integrationInstance["name"].(string)}
-	state.Id = types.String{Value: integrationInstance["id"].(string)}
-	state.IntegrationName = types.String{Value: integrationInstance["brand"].(string)}
-	state.PropagationLabels = propLabels
+	result := IntegrationInstance{
+		Name:              types.String{Value: integration["name"].(string)},
+		Id:                types.String{Value: integration["id"].(string)},
+		IntegrationName:   types.String{Value: integration["brand"].(string)},
+		Account:           config.Account,
+		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
+		Config:            config.Config,
+	}
 
-	// Set state
-	diags = resp.State.Set(ctx, &state)
+	// Generate resource state struct
+	diags = resp.State.Set(ctx, result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

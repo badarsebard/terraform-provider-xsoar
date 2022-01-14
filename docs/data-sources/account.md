@@ -1,29 +1,26 @@
 ---
-page_title: "$template$ Data Source - terraform-provider-xsoar"
+page_title: "xsoar_account Data Source - terraform-provider-xsoar"
 subcategory: ""
 description: |-
-$template$ data source in the Terraform provider XSOAR.
+xsoar_account data source in the Terraform provider XSOAR.
 ---
 
-# Data Source `$templaate$`
+# Data Source xsoar_account
 
-$template$ data source in the Terraform provider XSOAR.
+Account data source in the Terraform provider XSOAR.
 
 ## Example Usage
-
 ```terraform
-data "$template$" "example" {
-  sample_attribute = "foo"
+data "xsoar_account" "example" {
+  name = "foo"
 }
 ```
 
-## Schema
+## Argument Reference
+- **name** (Required) The name of the account.
 
-### Required
-
-- **sample_attribute** (String, Required) Sample attribute.
-
-### Optional
-
-- **id** (String, Optional) The ID of this resource.
-
+## Attributes Reference
+- **id** The ID of the resource.
+- **propagation_labels** List of propagation labels assigned to the account.
+- **account_roles** List of user roles assigned to the account.
+- **host_group_name** Name of the HA group to which this belongs

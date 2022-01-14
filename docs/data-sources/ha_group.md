@@ -1,29 +1,25 @@
 ---
-page_title: "$template$ Data Source - terraform-provider-xsoar"
+page_title: "xsoar_ha_group Data Source - terraform-provider-xsoar"
 subcategory: ""
 description: |-
-$template$ data source in the Terraform provider XSOAR.
+xsoar_ha_group data source in the Terraform provider XSOAR.
 ---
 
-# Data Source `$templaate$`
+# Data Source xsoar_ha_group
 
-$template$ data source in the Terraform provider XSOAR.
+ha_group data source in the Terraform provider XSOAR.
 
 ## Example Usage
-
 ```terraform
-data "$template$" "example" {
-  sample_attribute = "foo"
+data "xsoar_ha_group" "example" {
+  name = "foo"
 }
 ```
 
-## Schema
+## Argument Reference
+- **name** (Required) The name of the ha_group.
 
-### Required
-
-- **sample_attribute** (String, Required) Sample attribute.
-
-### Optional
-
-- **id** (String, Optional) The ID of this resource.
-
+## Attributes Reference
+- **id** The ID of the resource.
+- **elastic_cluster_url** URL location of Elasticsearch cluster, including scheme and port.
+- **elastic_index_prefix** String prefix for HA Group indexes.

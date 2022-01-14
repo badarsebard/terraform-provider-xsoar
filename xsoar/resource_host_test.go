@@ -36,7 +36,7 @@ func TestAccHost_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"server_url",
 					"ssh_user",
-					"ssh_key_file",
+					"ssh_key",
 				},
 			},
 		},
@@ -94,10 +94,10 @@ func testAccHostResourceBasic(name string) string {
 	host := os.Getenv("DEMISTO_HOST")
 	c := `
 resource "xsoar_host" "{name}" {
-  name          = "{host}"
-  server_url    = "{host}:22"
-  ssh_user      = "vagrant"
-  ssh_key_file  = "{keyfile}"
+  name       = "{host}"
+  server_url = "{host}:22"
+  ssh_user   = "vagrant"
+  ssh_key    = file("{keyfile}")
 }`
 	c = strings.Replace(c, "{name}", name, -1)
 	c = strings.Replace(c, "{keyfile}", keyfile, -1)

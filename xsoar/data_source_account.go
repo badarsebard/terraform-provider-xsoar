@@ -56,16 +56,16 @@ type dataSourceAccount struct {
 }
 
 func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	// Declare struct that this function will set to this data source's state
-	var state Account
-	diags := req.Config.Get(ctx, &state)
+	// Declare struct that this function will set to this data source's config
+	var config Account
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Get account from API and then update what is in state from what the API returns
-	accName := "acc_" + state.Name.Value
+	// Get account from API and then update what is in config from what the API returns
+	accName := "acc_" + config.Name.Value
 
 	// Get account current value
 	account, _, err := r.p.client.DefaultApi.GetAccount(ctx, accName).Execute()
@@ -78,7 +78,7 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 	}
 
 	var propagationLabels []attr.Value
-	if account["propagationLabels"] != nil {
+	if account["propagationLabels"] == nil {
 		propagationLabels = []attr.Value{}
 	} else {
 		for _, prop := range account["propagationLabels"].([]interface{}) {
@@ -122,7 +122,7 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 	var hostGroupName = ""
-	for _, group := range haGroups {
+	for _, group := range haGroups.Items {
 		if group["id"].(string) == account["hostGroupId"].(string) {
 			hostGroupName = group["name"].(string)
 			break
@@ -130,7 +130,7 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 	}
 
 	// Map response body to resource schema attribute
-	state = Account{
+	config = Account{
 		Name:          types.String{Value: account["displayName"].(string)},
 		HostGroupName: types.String{Value: hostGroupName},
 		HostGroupId:   types.String{Value: account["hostGroupId"].(string)},
@@ -150,7 +150,7 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -5,7 +5,7 @@
         <env name="DEMISTO_BASE_URL" value="https://main.xsoar.local" />
         <env name="DEMISTO_API_KEY" value="93C67EB97F30E6464DF1E5737F0470E0" />
         <env name="DEMISTO_INSECURE" value="1" />
-        <env name="DEMISTO_HOST_KEYFILE" value="$PROJECT_DIR$/.vagrant/machines/host1/virtualbox/private_key" />
+        <env name="DEMISTO_HOST_KEYFILE" value="~/go/src/terraform-provider-xsoar/.vagrant/machines/host1/virtualbox/private_key" />
         <env name="DEMISTO_HOST" value="host1.xsoar.local" />
       </envs>
     </makefile>

@@ -60,8 +60,6 @@ func testAccAccountDataSourceBasic(name string) string {
 resource "xsoar_account" "{name}" {
   name               = "{name}"
   host_group_name    = ""
-  account_roles      = ["Administrator"]
-  propagation_labels = [""]
 }
 
 data "xsoar_account" "{name}" {

@@ -42,7 +42,7 @@ func (r dataSourceHostType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Dia
 				Computed: false,
 				Optional: true,
 			},
-			"ssh_key_file": {
+			"ssh_key": {
 				Type:     types.StringType,
 				Computed: false,
 				Optional: true,
@@ -62,9 +62,9 @@ type dataSourceHost struct {
 }
 
 func (r dataSourceHost) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	// Declare struct that this function will set to this data source's state
-	var state Host
-	diags := req.Config.Get(ctx, &state)
+	// Declare struct that this function will set to this data source's config
+	var config Host
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -75,7 +75,7 @@ func (r dataSourceHost) Read(ctx context.Context, req tfsdk.ReadDataSourceReques
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
 		for host == nil {
-			host, _, err = r.p.client.DefaultApi.GetHost(ctx, state.Name.Value).Execute()
+			host, _, err = r.p.client.DefaultApi.GetHost(ctx, config.Name.Value).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Error listing HA groups",
@@ -90,7 +90,7 @@ func (r dataSourceHost) Read(ctx context.Context, req tfsdk.ReadDataSourceReques
 	select {
 	case _ = <-c1:
 		break
-	case <-time.After(60 * time.Second):
+	case <-time.After(300 * time.Second):
 		resp.Diagnostics.AddError(
 			"Error getting host",
 			"Could not get host before timeout",
@@ -135,6 +135,9 @@ func (r dataSourceHost) Read(ctx context.Context, req tfsdk.ReadDataSourceReques
 	} else {
 		result.ElasticsearchUrl.Null = true
 	}
+	result.ServerUrl = config.ServerUrl
+	result.SSHUser = config.SSHUser
+	result.SSHKey = config.SSHKey
 
 	// Set state
 	diags = resp.State.Set(ctx, result)

@@ -83,10 +83,10 @@ func testAccHostDataSourceBasic(name string) string {
 	host := os.Getenv("DEMISTO_HOST")
 	c := `
 resource "xsoar_host" "{name}" {
-  name          = "{host}"
-  server_url    = "{host}:22"
-  ssh_user      = "vagrant"
-  ssh_key_file  = "{keyfile}"
+  name       = "{host}"
+  server_url = "{host}:22"
+  ssh_user   = "vagrant"
+  ssh_key    = file("{keyfile}")
 }
 
 data "xsoar_host" "{name}" {

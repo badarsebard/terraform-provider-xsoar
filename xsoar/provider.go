@@ -72,10 +72,10 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	}
 
 	if config.Apikey.Null {
-		apikey = os.Getenv("DEMISTO_API_KEY")
-	} else {
-		apikey = config.Apikey.Value
+		config.Apikey.Value = os.Getenv("DEMISTO_API_KEY")
+		config.Apikey.Null = false
 	}
+	apikey = config.Apikey.Value
 
 	if apikey == "" {
 		// Error vs warning - empty value must stop execution
@@ -98,10 +98,10 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	}
 
 	if config.MainHost.Null {
-		mainhost = os.Getenv("DEMISTO_BASE_URL")
-	} else {
-		mainhost = config.MainHost.Value
+		config.MainHost.Value = os.Getenv("DEMISTO_BASE_URL")
+		config.MainHost.Null = false
 	}
+	mainhost = config.MainHost.Value
 
 	if mainhost == "" {
 		// Error vs warning - empty value must stop execution
@@ -113,11 +113,17 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	}
 
 	var insecure bool
-	if config.Insecure.Value || len(os.Getenv("DEMISTO_INSECURE")) > 0 {
-		insecure = true
-	} else {
-		insecure = false
+	if config.Insecure.Null {
+		if len(os.Getenv("DEMISTO_INSECURE")) > 0 {
+			config.Insecure.Value = true
+			config.Insecure.Null = false
+		} else {
+			insecure = false
+			config.Insecure.Value = false
+			config.Insecure.Null = false
+		}
 	}
+	insecure = config.Insecure.Value
 
 	// Create a new xsoar client and set it to the provider client
 	openapiConfig := openapi.NewConfiguration()
@@ -145,6 +151,8 @@ func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceTyp
 		"xsoar_ha_group":             resourceHAGroupType{},
 		"xsoar_host":                 resourceHostType{},
 		"xsoar_integration_instance": resourceIntegrationInstanceType{},
+		"xsoar_classifier":           resourceClassifierType{},
+		"xsoar_mapper":               resourceMapperType{},
 	}, nil
 }
 

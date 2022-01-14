@@ -16,13 +16,13 @@ provider "xsoar" {
 resource "xsoar_ha_group" "ha1" {
   name                 = "ha_1"
   elastic_index_prefix = "ha_1_"
-  elasticsearch_url = "http://elastic.xsoar.local:9200"
+  elasticsearch_url    = "http://elastic.example.com:9200"
 }
 
 resource "xsoar_host" "host1" {
-  name          = "host1.xsoar.local"
+  name          = "host.example.com"
   ha_group_name = xsoar_ha_group.ha1.name
-  server_url    = "host1.xsoar.local:22"
+  server_url    = "host.example.com:22"
   ssh_user      = "vagrant"
   ssh_key       = file("/path/to/file")
 }
