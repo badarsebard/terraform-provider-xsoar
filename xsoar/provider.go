@@ -163,5 +163,7 @@ func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourc
 		"xsoar_ha_group":             dataSourceHAGroupType{},
 		"xsoar_host":                 dataSourceHostType{},
 		"xsoar_integration_instance": dataSourceIntegrationInstanceType{},
+		"xsoar_classifier":           dataSourceClassifierType{},
+		"xsoar_mapper":               dataSourceMapperType{},
 	}, nil
 }
