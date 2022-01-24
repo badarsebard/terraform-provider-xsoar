@@ -22,18 +22,13 @@ func (r dataSourceMapperType) GetSchema(_ context.Context) (tfsdk.Schema, diag.D
 				Type:     types.StringType,
 				Required: true,
 			},
-			"host_group_name": {
+			"id": {
 				Type:     types.StringType,
 				Computed: true,
 				Optional: false,
 			},
-			"host_group_id": {
+			"mapping": {
 				Type:     types.StringType,
-				Computed: true,
-				Optional: false,
-			},
-			"account_roles": {
-				Type:     types.ListType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},
@@ -42,9 +37,15 @@ func (r dataSourceMapperType) GetSchema(_ context.Context) (tfsdk.Schema, diag.D
 				Computed: true,
 				Optional: false,
 			},
-			"id": {
+			"account": {
 				Type:     types.StringType,
 				Computed: true,
+				Optional: false,
+			},
+			"direction": {
+				Type:     types.StringType,
+				Computed: true,
+				Optional: false,
 			},
 		},
 	}, nil

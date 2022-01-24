@@ -22,18 +22,23 @@ func (r dataSourceClassifierType) GetSchema(_ context.Context) (tfsdk.Schema, di
 				Type:     types.StringType,
 				Required: true,
 			},
-			"host_group_name": {
+			"id": {
 				Type:     types.StringType,
 				Computed: true,
 				Optional: false,
 			},
-			"host_group_id": {
+			"default_incident_type": {
 				Type:     types.StringType,
 				Computed: true,
 				Optional: false,
 			},
-			"account_roles": {
-				Type:     types.ListType{ElemType: types.StringType},
+			"key_type_map": {
+				Type:     types.StringType,
+				Computed: true,
+				Optional: false,
+			},
+			"transformer": {
+				Type:     types.StringType,
 				Computed: true,
 				Optional: false,
 			},
@@ -42,9 +47,10 @@ func (r dataSourceClassifierType) GetSchema(_ context.Context) (tfsdk.Schema, di
 				Computed: true,
 				Optional: false,
 			},
-			"id": {
+			"account": {
 				Type:     types.StringType,
 				Computed: true,
+				Optional: false,
 			},
 		},
 	}, nil
