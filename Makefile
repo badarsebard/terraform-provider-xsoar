@@ -3,7 +3,7 @@ HOSTNAME=local
 NAMESPACE=badarsebard
 NAME=xsoar
 BINARY=terraform-provider-${NAME}
-VERSION=0.3.0
+VERSION=0.3.6
 OS=${MY_OS}
 ARCH=${MY_ARCH}
 
