@@ -3,7 +3,7 @@ module terraform-provider-xsoar
 go 1.17
 
 require (
-	github.com/badarsebard/xsoar-sdk-go/openapi v0.2.20
+	github.com/badarsebard/xsoar-sdk-go/openapi v0.2.21
 	github.com/hashicorp/terraform-plugin-framework v0.4.2
 	github.com/hashicorp/terraform-plugin-go v0.4.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.8.0
