@@ -55,8 +55,9 @@ func (r resourceHostType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 				Required: true,
 			},
 			"ssh_key": {
-				Type:     types.StringType,
-				Required: true,
+				Type:      types.StringType,
+				Required:  true,
+				Sensitive: true,
 			},
 		},
 	}, nil
@@ -277,6 +278,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}()
 	select {
 	case _ = <-c1:
+		log.Println(host)
 		break
 	case <-time.After(300 * time.Second):
 		resp.Diagnostics.AddError(
