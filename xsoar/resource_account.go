@@ -123,7 +123,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 	// Create new account
 	var accounts openapi.AccountsWrapper
-	err = resource.RetryContext(ctx, 300*time.Second, func() *resource.RetryError {
+	err = resource.RetryContext(ctx, 600*time.Second, func() *resource.RetryError {
 		var httpResponse *http.Response
 		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
 		log.Printf("creating account")
@@ -131,7 +131,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 			body, _ := io.ReadAll(httpResponse.Body)
 			payload, _ := io.ReadAll(httpResponse.Request.Body)
 			log.Printf("%s : %s - %s\n", payload, httpResponse.Status, body)
-			time.Sleep(30 * time.Second)
+			time.Sleep(60 * time.Second)
 			return resource.RetryableError(fmt.Errorf("error creating instance: %s", err))
 		}
 		return nil
