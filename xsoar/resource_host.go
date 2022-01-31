@@ -176,7 +176,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			}
 		}
 	} else {
-		_, _, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
+		_, httpResponse, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
 		if err != nil {
 			body, bodyErr := io.ReadAll(httpResponse.Body)
 			if bodyErr != nil {
@@ -184,7 +184,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 				return
 			}
 			log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
-			i := bytes.Index(body, []byte("Already building host for ha group"))
+			i := bytes.Index(body, []byte("Already building host installer"))
 			if i > -1 {
 				for true {
 					_, httpResponse, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
@@ -270,14 +270,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
 		for host == nil {
-			host, _, err = r.p.client.DefaultApi.GetHost(ctx, plan.Name.Value).Execute()
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Error listing HA groups",
-					"Could not list HA groups: "+err.Error(),
-				)
-				return
-			}
+			host, _, _ = r.p.client.DefaultApi.GetHost(ctx, plan.Name.Value).Execute()
 			time.Sleep(time.Second)
 		}
 		c1 <- host
