@@ -293,9 +293,15 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	haGroupName, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
+		body, bodyErr := io.ReadAll(httpResponse.Body)
+		if bodyErr != nil {
+			log.Println("error reading body: " + bodyErr.Error())
+			return
+		}
+		log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
-			"Could not get HA group: "+err.Error()+" "+httpResponse.Status,
+			"Could not get HA group: "+err.Error(),
 		)
 		return
 	}
