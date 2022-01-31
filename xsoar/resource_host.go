@@ -267,10 +267,10 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	// Verify host details
 	log.Println("Verifying host details")
-	var host map[string]interface{}
+	var host = make(map[string]interface{})
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
-		for len(host) == 0 {
+		for len(host) == 0 || host["hostGroupId"] == "" {
 			host, _, _ = r.p.client.DefaultApi.GetHost(ctx, plan.Name.Value).Execute()
 			time.Sleep(time.Second)
 		}
