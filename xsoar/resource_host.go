@@ -270,7 +270,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	var host map[string]interface{}
 	c1 := make(chan map[string]interface{}, 1)
 	go func() {
-		for host == nil {
+		for len(host) == 0 {
 			host, _, _ = r.p.client.DefaultApi.GetHost(ctx, plan.Name.Value).Execute()
 			time.Sleep(time.Second)
 		}
