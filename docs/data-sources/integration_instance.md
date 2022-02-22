@@ -24,3 +24,4 @@ data "xsoar_integration_instance" "example" {
 - **integration_name** The name of the integration to be used. This represents the kind of integration to be configured, not the individual instance.
 - **account** The name of the multi-tenant account for the instance of the integration.
 - **propagation_labels** A list of strings to apply to the resource as propagation labels.
+- **incoming_mapper_id** The ID of the incoming mapper to use for the integration.

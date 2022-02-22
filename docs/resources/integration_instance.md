@@ -16,6 +16,7 @@ resource "xsoar_integration_instance" "example" {
   name               = "foo"
   integration_name   = "threatcentral"
   propagation_labels = ["all"]
+  incoming_mapper_id = "c0a4bb6d-4799-4818-8cc2-9cc343ad8ad7a"
   config = {
     APIAddress : "https://threatcentral.io/tc/rest/summaries"
     APIKey : "123"
@@ -43,6 +44,7 @@ resource "xsoar_integration_instance" "example" {
 - **config** (Required) A map of keys and values that configure the integration. The keys and their accepted values are dependent on the integration itself.
 - **account** (Optional) The name of the multi-tenant account for the instance of the integration.
 - **propagation_labels** (Optional) A list of strings to apply to the resource as propagation labels.
+- **incoming_mapper_id** (Optional) The ID of the incoming mapper to use for the integration.
 
 ## Attributes Reference
 - **id** The ID of this resource.
