@@ -310,7 +310,9 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 			moduleInstance["name"] = plan.Name.Value
 			//moduleInstance["outgoingMapperId"] = ""
 			//moduleInstance["passwordProtected"] = false
-			moduleInstance["propagationLabels"] = plan.PropagationLabels
+			var propLabels []string	
+			plan.PropagationLabels.ElementsAs(ctx, propLabels, false)	
+			moduleInstance["propagationLabels"] = propLabels
 			//moduleInstance["resetContext"] = false
 			moduleInstance["version"] = -1
 			break
@@ -332,11 +334,15 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		moduleInstance["data"] = append(moduleInstance["data"].([]map[string]interface{}), param)
 	}
 	var integration map[string]interface{}
+	var httpResponse *http.Response
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		integration, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
+		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
 	} else {
-		integration, _, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
+		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 	}
+	getBody := httpResponse.Body	
+	b, _ := io.ReadAll(getBody)	
+	log.Println(string(b))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating integration instance",
