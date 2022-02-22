@@ -44,6 +44,10 @@ func (r dataSourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.S
 				Optional: false,
 				Computed: true,
 			},
+			"incoming_mapper_id": {
+				Type:     types.StringType,
+				Optional: true,
+			},
 		},
 	}, nil
 }
@@ -108,6 +112,7 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 		Account:           config.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            config.Config,
+		IncomingMapperId:  config.IncomingMapperId,
 	}
 
 	// Generate resource state struct

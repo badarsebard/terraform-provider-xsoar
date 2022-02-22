@@ -46,6 +46,10 @@ func (r resourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.Sch
 				Optional:      true,
 				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
 			},
+			"incoming_mapper_id": {
+				Type:     types.StringType,
+				Optional: true,
+			},
 		},
 	}, nil
 }
@@ -107,7 +111,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			//moduleInstance["engine"] = ""
 			//moduleInstance["engineGroup"] = ""
 			//moduleInstance["id"] = ""
-			//moduleInstance["incomingMapperId"] = ""
+			moduleInstance["incomingMapperId"] = plan.IncomingMapperId.Value
 			//moduleInstance["integrationLogLevel"] = ""
 			// todo: add this as a config option (byoi)
 			var isIntegrationScript bool
@@ -180,6 +184,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
+		IncomingMapperId:  plan.IncomingMapperId,
 	}
 
 	// Generate resource state struct
@@ -241,6 +246,7 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		Account:           state.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            state.Config,
+		IncomingMapperId:  state.IncomingMapperId,
 	}
 
 	// Generate resource state struct
@@ -297,7 +303,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 			//moduleInstance["engine"] = ""
 			//moduleInstance["engineGroup"] = ""
 			moduleInstance["id"] = state.Id.Value
-			//moduleInstance["incomingMapperId"] = ""
+			moduleInstance["incomingMapperId"] = plan.IncomingMapperId.Value
 			//moduleInstance["integrationLogLevel"] = ""
 			// todo: add this as a config option (byoi)
 			var isIntegrationScript bool
@@ -372,6 +378,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
+		IncomingMapperId:  plan.IncomingMapperId,
 	}
 
 	// Set state
@@ -459,6 +466,7 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            types.Map{},
+		IncomingMapperId:  types.String{},
 	}
 
 	if acc != "" {
