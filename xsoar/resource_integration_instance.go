@@ -49,6 +49,7 @@ func (r resourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.Sch
 			"incoming_mapper_id": {
 				Type:     types.StringType,
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}, nil
@@ -184,7 +185,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
-		IncomingMapperId:  plan.IncomingMapperId,
+		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
 	}
 
 	// Generate resource state struct
@@ -246,7 +247,7 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		Account:           state.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            state.Config,
-		IncomingMapperId:  state.IncomingMapperId,
+		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
 	}
 
 	// Generate resource state struct
@@ -378,7 +379,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
-		IncomingMapperId:  plan.IncomingMapperId,
+		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
 	}
 
 	// Set state
@@ -466,7 +467,7 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            types.Map{},
-		IncomingMapperId:  types.String{},
+		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
 	}
 
 	if acc != "" {
