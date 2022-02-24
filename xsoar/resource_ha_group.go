@@ -3,6 +3,7 @@ package xsoar
 import (
 	"context"
 	"github.com/badarsebard/xsoar-sdk-go/openapi"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,6 +35,14 @@ func (r resourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
 			},
 			// todo: add missing ES parameters
+			"account_ids": {
+				Type:     types.ListType{ElemType: types.StringType},
+				Computed: true,
+			},
+			"host_ids": {
+				Type:     types.ListType{ElemType: types.StringType},
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -83,6 +92,15 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 
+	var accountIds []attr.Value
+	for _, a := range haGroup.GetAccountIds() {
+		accountIds = append(accountIds, types.String{Value: a})
+	}
+	var hostIds []attr.Value
+	for _, h := range haGroup.GetAccountIds() {
+		hostIds = append(hostIds, types.String{Value: h})
+	}
+
 	// Map response body to resource schema attribute
 	var result HAGroup
 	result = HAGroup{
@@ -90,6 +108,25 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
+		AccountIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: types.StringType,
+		},
+		HostIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: nil,
+		},
+	}
+
+	if len(accountIds) > 0 {
+		result.AccountIds.Null = false
+		result.AccountIds.Elems = accountIds
+	}
+	if len(hostIds) > 0 {
+		result.HostIds.Null = false
+		result.HostIds.Elems = hostIds
 	}
 
 	// Generate resource state struct
@@ -121,16 +158,45 @@ func (r resourceHAGroup) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		return
 	}
 
+	var accountIds []attr.Value
+	for _, a := range haGroup.GetAccountIds() {
+		accountIds = append(accountIds, types.String{Value: a})
+	}
+	var hostIds []attr.Value
+	for _, h := range haGroup.GetHostIds() {
+		hostIds = append(hostIds, types.String{Value: h})
+	}
+
 	// Map response body to resource schema attribute
-	state = HAGroup{
+	var result HAGroup
+	result = HAGroup{
 		Name:               types.String{Value: haGroup.GetName()},
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
+		AccountIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: types.StringType,
+		},
+		HostIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: types.StringType,
+		},
+	}
+
+	if len(accountIds) > 0 {
+		result.AccountIds.Null = false
+		result.AccountIds.Elems = accountIds
+	}
+	if len(hostIds) > 0 {
+		result.HostIds.Null = false
+		result.HostIds.Elems = hostIds
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -170,12 +236,41 @@ func (r resourceHAGroup) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		return
 	}
 
+	var accountIds []attr.Value
+	for _, a := range haGroup.GetAccountIds() {
+		accountIds = append(accountIds, types.String{Value: a})
+	}
+	var hostIds []attr.Value
+	for _, h := range haGroup.GetAccountIds() {
+		hostIds = append(hostIds, types.String{Value: h})
+	}
+
 	// Map response body to resource schema attribute
-	result := HAGroup{
+	var result HAGroup
+	result = HAGroup{
 		Name:               types.String{Value: haGroup.GetName()},
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
+		AccountIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: types.StringType,
+		},
+		HostIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: nil,
+		},
+	}
+
+	if len(accountIds) > 0 {
+		result.AccountIds.Null = false
+		result.AccountIds.Elems = accountIds
+	}
+	if len(hostIds) > 0 {
+		result.HostIds.Null = false
+		result.HostIds.Elems = hostIds
 	}
 
 	// Set state
@@ -228,7 +323,7 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 		return
 	}
 	var id string
-	for _, group := range haGroups.Items {
+	for _, group := range haGroups {
 		if group["name"].(string) == name {
 			id = group["id"].(string)
 			break
@@ -243,16 +338,45 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 		return
 	}
 
+	var accountIds []attr.Value
+	for _, a := range haGroup.GetAccountIds() {
+		accountIds = append(accountIds, types.String{Value: a})
+	}
+	var hostIds []attr.Value
+	for _, h := range haGroup.GetAccountIds() {
+		hostIds = append(hostIds, types.String{Value: h})
+	}
+
 	// Map response body to resource schema attribute
-	var state = HAGroup{
+	var result HAGroup
+	result = HAGroup{
 		Name:               types.String{Value: haGroup.GetName()},
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
+		AccountIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: types.StringType,
+		},
+		HostIds: types.List{
+			Unknown:  false,
+			Null:     true,
+			ElemType: nil,
+		},
+	}
+
+	if len(accountIds) > 0 {
+		result.AccountIds.Null = false
+		result.AccountIds.Elems = accountIds
+	}
+	if len(hostIds) > 0 {
+		result.HostIds.Null = false
+		result.HostIds.Elems = hostIds
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

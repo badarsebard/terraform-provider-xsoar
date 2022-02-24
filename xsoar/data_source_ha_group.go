@@ -19,17 +19,22 @@ func (r dataSourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 			"id": {
 				Type:     types.StringType,
 				Computed: true,
-				Optional: false,
 			},
 			"elasticsearch_url": {
 				Type:     types.StringType,
 				Computed: true,
-				Optional: false,
 			},
 			"elastic_index_prefix": {
 				Type:     types.StringType,
 				Computed: true,
-				Optional: false,
+			},
+			"account_ids": {
+				Type:     types.ListType{ElemType: types.StringType},
+				Computed: true,
+			},
+			"host_ids": {
+				Type:     types.ListType{ElemType: types.StringType},
+				Computed: true,
 			},
 		},
 	}, nil
@@ -64,7 +69,7 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 	var haGroupId string
-	for _, group := range haGroups.Items {
+	for _, group := range haGroups {
 		if config.Name.Value == group["name"].(string) {
 			haGroupId = group["id"].(string)
 			break
@@ -85,6 +90,18 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
+		AccountIds: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    nil,
+			ElemType: nil,
+		},
+		HostIds: types.List{
+			Unknown:  false,
+			Null:     false,
+			Elems:    nil,
+			ElemType: nil,
+		},
 	}
 
 	// Set state
