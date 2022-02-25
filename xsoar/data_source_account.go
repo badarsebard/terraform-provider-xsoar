@@ -122,7 +122,7 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		return
 	}
 	var hostGroupName = ""
-	for _, group := range haGroups.Items {
+	for _, group := range haGroups {
 		if group["id"].(string) == account["hostGroupId"].(string) {
 			hostGroupName = group["name"].(string)
 			break

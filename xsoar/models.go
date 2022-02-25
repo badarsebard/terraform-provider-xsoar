@@ -20,17 +20,28 @@ type HAGroup struct {
 	Id                 types.String `tfsdk:"id"`
 	ElasticsearchUrl   types.String `tfsdk:"elasticsearch_url"`
 	ElasticIndexPrefix types.String `tfsdk:"elastic_index_prefix"`
+	AccountIds         types.List   `tfsdk:"account_ids"`
+	HostIds            types.List   `tfsdk:"host_ids"`
+}
+
+// HAGroups -
+type HAGroups struct {
+	Name        types.String `tfsdk:"name"`
+	MaxAccounts types.Int64  `tfsdk:"max_accounts"`
+	Groups      types.List   `tfsdk:"groups"`
 }
 
 // Host -
 type Host struct {
-	Name             types.String `tfsdk:"name"`
-	Id               types.String `tfsdk:"id"`
-	HAGroupName      types.String `tfsdk:"ha_group_name"`
-	ElasticsearchUrl types.String `tfsdk:"elasticsearch_url"`
-	ServerUrl        types.String `tfsdk:"server_url"`
-	SSHUser          types.String `tfsdk:"ssh_user"`
-	SSHKey           types.String `tfsdk:"ssh_key"`
+	Name                types.String `tfsdk:"name"`
+	Id                  types.String `tfsdk:"id"`
+	HAGroupName         types.String `tfsdk:"ha_group_name"`
+	ElasticsearchUrl    types.String `tfsdk:"elasticsearch_url"`
+	ServerUrl           types.String `tfsdk:"server_url"`
+	SSHUser             types.String `tfsdk:"ssh_user"`
+	SSHKey              types.String `tfsdk:"ssh_key"`
+	InstallationTimeout types.Int64  `tfsdk:"installation_timeout"`
+	ExtraFlags          types.List   `tfsdk:"extra_flags"`
 }
 
 // IntegrationInstance -

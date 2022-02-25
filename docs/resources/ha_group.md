@@ -25,6 +25,8 @@ resource "xsoar_ha_group" "example" {
 
 ## Attributes Reference
 - **id** The ID of the resource
+- **account_ids** List of strings representing the account ID of accounts associated to the HA group
+- **host_ids** List of strings representing the host ID of the hosts of the HA group
 
 <!-- ## Timeouts -->
 
