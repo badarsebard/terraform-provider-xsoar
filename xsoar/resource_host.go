@@ -278,7 +278,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			return
 		}
 		defer session.Close()
-		err = session.Run(fmt.Sprintf(`touch %s/xsoar_host_install.lock`, plan.NFSMount.Value))
+		err = session.Run(fmt.Sprintf(`sudo touch %s/xsoar_host_install.lock`, plan.NFSMount.Value))
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating lock file",
@@ -363,7 +363,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			return
 		}
 		defer session.Close()
-		err = session.Run(fmt.Sprintf(`rm %s/xsoar_host_install.lock`, plan.NFSMount.Value))
+		err = session.Run(fmt.Sprintf(`sudo rm %s/xsoar_host_install.lock`, plan.NFSMount.Value))
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating lock file",
