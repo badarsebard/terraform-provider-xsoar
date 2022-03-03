@@ -400,6 +400,10 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		Id:                  types.String{Value: hostId},
 		InstallationTimeout: plan.InstallationTimeout,
 		ExtraFlags:          plan.ExtraFlags,
+		NFSMount:            plan.NFSMount,
+		ServerUrl:           plan.ServerUrl,
+		SSHUser:             plan.SSHUser,
+		SSHKey:              plan.SSHKey,
 	}
 
 	if host["host"].(string) != haGroupName.GetName() {
@@ -418,9 +422,6 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	} else {
 		result.ElasticsearchUrl.Null = true
 	}
-	result.ServerUrl = plan.ServerUrl
-	result.SSHUser = plan.SSHUser
-	result.SSHKey = plan.SSHKey
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
