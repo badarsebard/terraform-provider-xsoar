@@ -36,6 +36,7 @@ type Host struct {
 	Name                types.String `tfsdk:"name"`
 	Id                  types.String `tfsdk:"id"`
 	HAGroupName         types.String `tfsdk:"ha_group_name"`
+	NFSMount            types.String `tfsdk:"nfs_mount"`
 	ElasticsearchUrl    types.String `tfsdk:"elasticsearch_url"`
 	ServerUrl           types.String `tfsdk:"server_url"`
 	SSHUser             types.String `tfsdk:"ssh_user"`

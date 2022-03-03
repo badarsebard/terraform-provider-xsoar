@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -34,6 +35,11 @@ func (r resourceHostType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 				Optional: false,
 			},
 			"ha_group_name": {
+				Type:          types.StringType,
+				Optional:      true,
+				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
+			},
+			"nfs_mount": {
 				Type:          types.StringType,
 				Optional:      true,
 				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
@@ -239,7 +245,50 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		return
 	}
 
-	// 4) Execute installer
+	// 4) Check for lock
+	if !plan.NFSMount.Null {
+		// wait a random amount of time
+		randomTimeToWait := rand.Intn(10) + 1
+		time.Sleep(time.Duration(randomTimeToWait))
+		// wait for a lock file in /tmp
+		session, err = conn.NewSession()
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating ssh session",
+				"Could not create ssh session: "+err.Error(),
+			)
+			return
+		}
+		defer session.Close()
+		err = session.Run(fmt.Sprintf(`while [[ -f "%s/xsoar_host_install.lock" ]]; do sleep %d; done`, plan.NFSMount.Value, randomTimeToWait))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error waiting for lock file",
+				"Lock file error: "+err.Error(),
+			)
+			return
+		}
+		// create lock file
+		session, err = conn.NewSession()
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating ssh session",
+				"Could not create ssh session: "+err.Error(),
+			)
+			return
+		}
+		defer session.Close()
+		err = session.Run(fmt.Sprintf(`touch %s/xsoar_host_install.lock`, plan.NFSMount.Value))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating lock file",
+				"Could not create lock file: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	// 5) Execute installer
 	log.Println("Executing install")
 	session, err = conn.NewSession()
 	if err != nil {
@@ -302,6 +351,26 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			"Could not get host before timeout",
 		)
 		return
+	}
+	// delete lock file
+	if !plan.NFSMount.Null {
+		session, err = conn.NewSession()
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating ssh session",
+				"Could not create ssh session: "+err.Error(),
+			)
+			return
+		}
+		defer session.Close()
+		err = session.Run(fmt.Sprintf(`rm %s/xsoar_host_install.lock`, plan.NFSMount.Value))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating lock file",
+				"Could not create lock file: "+err.Error(),
+			)
+			return
+		}
 	}
 
 	// Map response body to resource schema attribute
