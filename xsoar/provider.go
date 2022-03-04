@@ -3,15 +3,12 @@ package xsoar
 import (
 	"context"
 	"crypto/tls"
-	"math/rand"
-	"net/http"
-	"os"
-	"time"
-
 	"github.com/badarsebard/xsoar-sdk-go/openapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"net/http"
+	"os"
 )
 
 var _ = os.Stderr
@@ -144,7 +141,6 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	p.client = c
 	p.configured = true
 	p.data = &config
-	rand.Seed(time.Now().Unix())
 }
 
 // GetResources - Defines provider resources

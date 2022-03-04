@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"golang.org/x/crypto/ssh"
+	"hash/crc64"
 	"io"
 	"log"
 	"math/rand"
@@ -248,9 +249,13 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	// 4) Check for lock
 	if !plan.NFSMount.Null {
 		// wait a random amount of time
-		randomTimeToWait := rand.Intn(10) + 1
+		crcTable := crc64.MakeTable(crc64.ISO)
+		seedInt := int64(crc64.Checksum([]byte(plan.Name.Value), crcTable))
+		randSource := rand.NewSource(seedInt)
+		nrand := rand.New(randSource)
+		randomTimeToWait := nrand.Intn(30) + 1
 		time.Sleep(time.Duration(randomTimeToWait))
-		// wait for a lock file in /tmp
+		// attempt to place lock
 		session, err = conn.NewSession()
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -260,29 +265,14 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			return
 		}
 		defer session.Close()
-		err = session.Run(fmt.Sprintf(`while [[ -f "%s/xsoar_host_install.lock" ]]; do sleep %d; done`, plan.NFSMount.Value, randomTimeToWait))
+		err = session.Run(fmt.Sprintf(
+			`while [[ -f "%s/xsoar_host_install.lock" ]]; do sleep %d; done; sudo touch %s/xsoar_host_install.lock`,
+			plan.NFSMount.Value, randomTimeToWait, plan.NFSMount.Value,
+		))
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error waiting for lock file",
 				"Lock file error: "+err.Error(),
-			)
-			return
-		}
-		// create lock file
-		session, err = conn.NewSession()
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating ssh session",
-				"Could not create ssh session: "+err.Error(),
-			)
-			return
-		}
-		defer session.Close()
-		err = session.Run(fmt.Sprintf(`sudo touch %s/xsoar_host_install.lock`, plan.NFSMount.Value))
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating lock file",
-				"Could not create lock file: "+err.Error(),
 			)
 			return
 		}
