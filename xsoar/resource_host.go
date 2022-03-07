@@ -406,11 +406,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 
 	if len(host["elasticsearchAddress"].(string)) > 0 {
-		if isHA {
-			result.ElasticsearchUrl.Null = true
-		} else {
-			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
-		}
+		result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
 	} else {
 		result.ElasticsearchUrl.Null = true
 	}
