@@ -385,7 +385,6 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		return
 	}
 
-	// Map response body to resource schema attribute
 	var result Host
 	result = Host{
 		Name:                types.String{Value: hostName},
@@ -399,7 +398,6 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 
 	if host["host"].(string) != haGroupName.GetName() {
-		isHA = true
 		result.HAGroupName.Value = haGroupName.GetName()
 	} else {
 		result.HAGroupName.Null = true
@@ -462,8 +460,14 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 	var hostId = host["id"].(string)
 	var hostGroupId = host["hostGroupId"].(string)
 
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
+	haGroupName, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
+		body, bodyErr := io.ReadAll(httpResponse.Body)
+		if bodyErr != nil {
+			log.Println("error reading body: " + bodyErr.Error())
+			return
+		}
+		log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
 			"Could not get HA group: "+err.Error(),
@@ -477,29 +481,23 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 		Id:                  types.String{Value: hostId},
 		InstallationTimeout: state.InstallationTimeout,
 		ExtraFlags:          state.ExtraFlags,
+		NFSMount:            state.NFSMount,
+		ServerUrl:           state.ServerUrl,
+		SSHUser:             state.SSHUser,
+		SSHKey:              state.SSHKey,
 	}
 
-	var isHA = false
-	if host["host"].(string) != haGroup.GetName() {
-		isHA = true
-		result.HAGroupName.Value = haGroup.GetName()
+	if host["host"].(string) != haGroupName.GetName() {
+		result.HAGroupName.Value = haGroupName.GetName()
 	} else {
 		result.HAGroupName.Null = true
 	}
 
 	if len(host["elasticsearchAddress"].(string)) > 0 {
-		if isHA {
-			result.ElasticsearchUrl.Null = true
-		} else {
-			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
-		}
+		result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
 	} else {
 		result.ElasticsearchUrl.Null = true
 	}
-
-	result.ServerUrl = state.ServerUrl
-	result.SSHUser = state.SSHUser
-	result.SSHKey = state.SSHKey
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)

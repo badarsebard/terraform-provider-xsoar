@@ -92,6 +92,8 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 
+	// todo: trigger the host installer build
+
 	var accountIds []attr.Value
 	for _, a := range haGroup.GetAccountIds() {
 		accountIds = append(accountIds, types.String{Value: a})
