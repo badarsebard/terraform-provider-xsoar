@@ -256,7 +256,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		nrand := rand.New(randSource)
 		randomTimeToWait := nrand.Intn(30) + 1
 		log.Printf("sleeping for %d seconds\n", randomTimeToWait)
-		time.Sleep(time.Duration(randomTimeToWait))
+		time.Sleep(time.Duration(randomTimeToWait) * time.Second)
 		// attempt to place lock
 		session, err = conn.NewSession()
 		if err != nil {
