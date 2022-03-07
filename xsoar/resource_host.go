@@ -251,9 +251,11 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		// wait a random amount of time
 		crcTable := crc64.MakeTable(crc64.ISO)
 		seedInt := int64(crc64.Checksum([]byte(plan.Name.Value), crcTable))
+		log.Printf("generated seed: %d\n", seedInt)
 		randSource := rand.NewSource(seedInt)
 		nrand := rand.New(randSource)
 		randomTimeToWait := nrand.Intn(30) + 1
+		log.Printf("sleeping for %d seconds\n", randomTimeToWait)
 		time.Sleep(time.Duration(randomTimeToWait))
 		// attempt to place lock
 		session, err = conn.NewSession()
@@ -356,8 +358,8 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		err = session.Run(fmt.Sprintf(`sudo rm %s/xsoar_host_install.lock`, plan.NFSMount.Value))
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error creating lock file",
-				"Could not create lock file: "+err.Error(),
+				"Error deleting lock file",
+				"Could not delete lock file: "+err.Error(),
 			)
 			return
 		}
