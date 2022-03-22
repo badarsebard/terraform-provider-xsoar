@@ -311,6 +311,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	err = session.Run("sudo /tmp/installer.sh -- " + argsString)
 	if err != nil {
+		log.Printf("args: %s", argsString)
 		resp.Diagnostics.AddError(
 			"Error running installer",
 			"Could not run installer: "+err.Error(),
