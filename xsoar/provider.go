@@ -3,13 +3,12 @@ package xsoar
 import (
 	"context"
 	"crypto/tls"
-	"net/http"
-	"os"
-
 	"github.com/badarsebard/xsoar-sdk-go/openapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"net/http"
+	"os"
 )
 
 var _ = os.Stderr

@@ -262,8 +262,9 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 	}
 	var roles []attr.Value
 	for _, detail := range details {
-		castDetail := detail.(map[string]interface{})
-		if castDetail["name"] != nil && account["name"].(string) == castDetail["name"].(string) {
+		castDetail, ok1 := detail.(map[string]interface{})
+		accountName, ok2 := account["name"].(string)
+		if ok1 && ok2 && accountName == castDetail["name"].(string) {
 			roleObjects := castDetail["roles"].([]interface{})
 			for _, roleObject := range roleObjects {
 				roleName := roleObject.(map[string]interface{})["name"]
