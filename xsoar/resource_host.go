@@ -304,7 +304,15 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	}
 	if !plan.ExtraFlags.Null {
 		var extraArgs []string
-		plan.ExtraFlags.ElementsAs(ctx, extraArgs, false)
+		flagErr := plan.ExtraFlags.ElementsAs(ctx, &extraArgs, false)
+		if flagErr != nil {
+			resp.Diagnostics.AddError(
+				"Error extracting extra arguments",
+				fmt.Sprintf("Could not extract %s into extraArgs with error: %s", plan.ExtraFlags.Elems, flagErr),
+			)
+			return
+		}
+		log.Printf("extra args: %s\n", extraArgs)
 		args = append(args, extraArgs...)
 	}
 	argsString := strings.Join(args, " ")
