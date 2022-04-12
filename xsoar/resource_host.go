@@ -294,13 +294,13 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	var args = []string{
 		"-y",
-		"-external-address=" + plan.Name.Value,
+		"-external-address='" + plan.Name.Value + "'",
 	}
 	if isElastic && !isHA {
-		args = append(args, "-elasticsearch-url="+plan.ElasticsearchUrl.Value)
+		args = append(args, "-elasticsearch-url='"+plan.ElasticsearchUrl.Value+"'")
 	}
 	if isHA {
-		args = append(args, "-temp-folder=/tmp/demisto")
+		args = append(args, "-temp-folder='/tmp/demisto'")
 	}
 	if !plan.ExtraFlags.Null {
 		var extraArgs []string
