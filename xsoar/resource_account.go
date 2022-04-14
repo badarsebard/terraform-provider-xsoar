@@ -164,7 +164,8 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 			var hostGroupName string
 			for _, group := range haGroups {
-				if group["id"].(string) == account["hostGroupId"].(string) {
+				hostGroupId, ok := account["hostGroupId"].(string)
+				if ok && group["id"].(string) == hostGroupId {
 					hostGroupName = group["name"].(string)
 					break
 				}
@@ -238,6 +239,10 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		)
 		return
 	}
+	if account == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 	var propagationLabels []attr.Value
 	if account["propagationLabels"] == nil {
@@ -286,7 +291,8 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 	}
 	var hostGroupName = ""
 	for _, group := range haGroups {
-		if group["id"].(string) == account["hostGroupId"].(string) {
+		hostGroupId, ok := account["hostGroupId"].(string)
+		if ok && group["id"].(string) == hostGroupId {
 			hostGroupName = group["name"].(string)
 			break
 		}
@@ -432,6 +438,10 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		)
 		return
 	}
+	if account == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 	var propagationLabels []attr.Value
 	if account["propagationLabels"] != nil {
@@ -479,7 +489,8 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	}
 	var hostGroupName = ""
 	for _, group := range haGroups {
-		if group["id"].(string) == account["hostGroupId"].(string) {
+		hostGroupId, ok := account["hostGroupId"].(string)
+		if ok && group["id"].(string) == hostGroupId {
 			hostGroupName = group["name"].(string)
 			break
 		}
@@ -610,7 +621,8 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 	}
 	var hostGroupName = ""
 	for _, group := range haGroups {
-		if group["id"].(string) == account["hostGroupId"].(string) {
+		hostGroupId, ok := account["hostGroupId"].(string)
+		if ok && group["id"].(string) == hostGroupId {
 			hostGroupName = group["name"].(string)
 			break
 		}

@@ -324,6 +324,17 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			"Error running installer",
 			"Could not run installer: "+err.Error(),
 		)
+		log.Println("remove lock file")
+		session, err = conn.NewSession()
+		defer session.Close()
+		err = session.Run(fmt.Sprintf("sudo rm -f %s/xsoar_host_install.lock", plan.NFSMount.Value))
+		if err != nil {
+			log.Println("could not remove lock file")
+			resp.Diagnostics.AddError(
+				"Error removing lock file",
+				"Could not remove lock file: "+err.Error(),
+			)
+		}
 		return
 	}
 
