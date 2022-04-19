@@ -14,6 +14,11 @@ type Account struct {
 	PropagationLabels types.List   `tfsdk:"propagation_labels"`
 }
 
+// Accounts -
+type Accounts struct {
+	Accounts types.List `tfsdk:"accounts"`
+}
+
 // HAGroup -
 type HAGroup struct {
 	Name               types.String `tfsdk:"name"`
