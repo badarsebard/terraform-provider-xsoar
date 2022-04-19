@@ -44,7 +44,7 @@ type dataSourceAccounts struct {
 
 func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
 	// Declare struct that this function will set to this data source's config
-	var config Account
+	var config Accounts
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -175,6 +175,7 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 			Elems:    roles,
 			ElemType: types.StringType,
 		}
+		accountsAccounts.Elems = append(accountsAccounts.Elems, accountObject)
 	}
 
 	var result Accounts
