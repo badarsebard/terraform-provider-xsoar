@@ -115,7 +115,7 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 			},
 		}
 		// assign the values from the response to the object
-		accountName, ok := account["name"].(string)
+		accountName, ok := account["displayName"].(string)
 		if ok {
 			accountObject.Attrs["name"] = types.String{Value: accountName}
 		}
