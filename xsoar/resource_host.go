@@ -9,8 +9,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"golang.org/x/crypto/ssh"
+	"hash/crc64"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -34,6 +36,11 @@ func (r resourceHostType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 				Optional: false,
 			},
 			"ha_group_name": {
+				Type:          types.StringType,
+				Optional:      true,
+				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
+			},
+			"nfs_mount": {
 				Type:          types.StringType,
 				Optional:      true,
 				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
@@ -239,7 +246,41 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		return
 	}
 
-	// 4) Execute installer
+	// 4) Check for lock
+	if !plan.NFSMount.Null {
+		// wait a random amount of time
+		crcTable := crc64.MakeTable(crc64.ISO)
+		seedInt := int64(crc64.Checksum([]byte(plan.Name.Value), crcTable))
+		log.Printf("generated seed: %d\n", seedInt)
+		randSource := rand.NewSource(seedInt)
+		nrand := rand.New(randSource)
+		randomTimeToWait := nrand.Intn(30) + 1
+		log.Printf("sleeping for %d seconds\n", randomTimeToWait)
+		time.Sleep(time.Duration(randomTimeToWait) * time.Second)
+		// attempt to place lock
+		session, err = conn.NewSession()
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating ssh session",
+				"Could not create ssh session: "+err.Error(),
+			)
+			return
+		}
+		defer session.Close()
+		err = session.Run(fmt.Sprintf(
+			`while [[ -f "%s/xsoar_host_install.lock" ]]; do sleep %d; done; sudo touch %s/xsoar_host_install.lock`,
+			plan.NFSMount.Value, randomTimeToWait, plan.NFSMount.Value,
+		))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error waiting for lock file",
+				"Lock file error: "+err.Error(),
+			)
+			return
+		}
+	}
+
+	// 5) Execute installer
 	log.Println("Executing install")
 	session, err = conn.NewSession()
 	if err != nil {
@@ -253,27 +294,47 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	var args = []string{
 		"-y",
-		"-external-address=" + plan.Name.Value,
+		"-external-address='" + plan.Name.Value + "'",
 	}
 	if isElastic && !isHA {
-		args = append(args, "-elasticsearch-url="+plan.ElasticsearchUrl.Value)
+		args = append(args, "-elasticsearch-url='"+plan.ElasticsearchUrl.Value+"'")
 	}
 	if isHA {
-		args = append(args, "-temp-folder=/tmp/demisto")
+		args = append(args, "-temp-folder='/tmp/demisto'")
 	}
 	if !plan.ExtraFlags.Null {
 		var extraArgs []string
-		plan.ExtraFlags.ElementsAs(ctx, extraArgs, false)
+		flagErr := plan.ExtraFlags.ElementsAs(ctx, &extraArgs, false)
+		if flagErr != nil {
+			resp.Diagnostics.AddError(
+				"Error extracting extra arguments",
+				fmt.Sprintf("Could not extract %s into extraArgs with error: %s", plan.ExtraFlags.Elems, flagErr),
+			)
+			return
+		}
+		log.Printf("extra args: %s\n", extraArgs)
 		args = append(args, extraArgs...)
 	}
 	argsString := strings.Join(args, " ")
 
 	err = session.Run("sudo /tmp/installer.sh -- " + argsString)
+	log.Printf("args: %s", argsString)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error running installer",
 			"Could not run installer: "+err.Error(),
 		)
+		log.Println("remove lock file")
+		session, err = conn.NewSession()
+		defer session.Close()
+		err = session.Run(fmt.Sprintf("sudo rm -f %s/xsoar_host_install.lock", plan.NFSMount.Value))
+		if err != nil {
+			log.Println("could not remove lock file")
+			resp.Diagnostics.AddError(
+				"Error removing lock file",
+				"Could not remove lock file: "+err.Error(),
+			)
+		}
 		return
 	}
 
@@ -303,6 +364,26 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		)
 		return
 	}
+	// delete lock file
+	if !plan.NFSMount.Null {
+		session, err = conn.NewSession()
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating ssh session",
+				"Could not create ssh session: "+err.Error(),
+			)
+			return
+		}
+		defer session.Close()
+		err = session.Run(fmt.Sprintf(`sudo rm %s/xsoar_host_install.lock`, plan.NFSMount.Value))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error deleting lock file",
+				"Could not delete lock file: "+err.Error(),
+			)
+			return
+		}
+	}
 
 	// Map response body to resource schema attribute
 	var hostName = host["host"].(string)
@@ -324,34 +405,29 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		return
 	}
 
-	// Map response body to resource schema attribute
 	var result Host
 	result = Host{
 		Name:                types.String{Value: hostName},
 		Id:                  types.String{Value: hostId},
 		InstallationTimeout: plan.InstallationTimeout,
 		ExtraFlags:          plan.ExtraFlags,
+		NFSMount:            plan.NFSMount,
+		ServerUrl:           plan.ServerUrl,
+		SSHUser:             plan.SSHUser,
+		SSHKey:              plan.SSHKey,
 	}
 
 	if host["host"].(string) != haGroupName.GetName() {
-		isHA = true
 		result.HAGroupName.Value = haGroupName.GetName()
 	} else {
 		result.HAGroupName.Null = true
 	}
 
 	if len(host["elasticsearchAddress"].(string)) > 0 {
-		if isHA {
-			result.ElasticsearchUrl.Null = true
-		} else {
-			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
-		}
+		result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
 	} else {
 		result.ElasticsearchUrl.Null = true
 	}
-	result.ServerUrl = plan.ServerUrl
-	result.SSHUser = plan.SSHUser
-	result.SSHKey = plan.SSHKey
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
@@ -404,8 +480,14 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 	var hostId = host["id"].(string)
 	var hostGroupId = host["hostGroupId"].(string)
 
-	haGroup, _, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
+	haGroupName, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
+		body, bodyErr := io.ReadAll(httpResponse.Body)
+		if bodyErr != nil {
+			log.Println("error reading body: " + bodyErr.Error())
+			return
+		}
+		log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
 			"Could not get HA group: "+err.Error(),
@@ -419,29 +501,23 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 		Id:                  types.String{Value: hostId},
 		InstallationTimeout: state.InstallationTimeout,
 		ExtraFlags:          state.ExtraFlags,
+		NFSMount:            state.NFSMount,
+		ServerUrl:           state.ServerUrl,
+		SSHUser:             state.SSHUser,
+		SSHKey:              state.SSHKey,
 	}
 
-	var isHA = false
-	if host["host"].(string) != haGroup.GetName() {
-		isHA = true
-		result.HAGroupName.Value = haGroup.GetName()
+	if host["host"].(string) != haGroupName.GetName() {
+		result.HAGroupName.Value = haGroupName.GetName()
 	} else {
 		result.HAGroupName.Null = true
 	}
 
 	if len(host["elasticsearchAddress"].(string)) > 0 {
-		if isHA {
-			result.ElasticsearchUrl.Null = true
-		} else {
-			result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
-		}
+		result.ElasticsearchUrl.Value = host["elasticsearchAddress"].(string)
 	} else {
 		result.ElasticsearchUrl.Null = true
 	}
-
-	result.ServerUrl = state.ServerUrl
-	result.SSHUser = state.SSHUser
-	result.SSHKey = state.SSHKey
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
