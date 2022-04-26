@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"encoding/json"
 )
 
 type resourceIntegrationInstanceType struct{}
