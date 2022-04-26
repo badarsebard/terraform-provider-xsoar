@@ -113,7 +113,13 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 		Account:           config.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            config.Config,
-		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
+	}
+
+	IncomingMapperId, ok := integration["incomingMapperId"].(string)
+	if ok {
+		result.IncomingMapperId = types.String{Value: IncomingMapperId}
+	} else {
+		result.IncomingMapperId = types.String{Null: true}
 	}
 
 	// Generate resource state struct

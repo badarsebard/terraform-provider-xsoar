@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"encoding/json"
 )
 
 type resourceIntegrationInstanceType struct{}
@@ -112,13 +113,19 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			//moduleInstance["engine"] = ""
 			//moduleInstance["engineGroup"] = ""
 			//moduleInstance["id"] = ""
-			moduleInstance["incomingMapperId"] = plan.IncomingMapperId.Value
+			var IncomingMapperId string
+			if ok := plan.IncomingMapperId.Value; ok != "" {
+				IncomingMapperId = plan.IncomingMapperId.Value
+			} else {
+				IncomingMapperId = ""
+			}
+			moduleInstance["incomingMapperId"] = IncomingMapperId
 			//moduleInstance["integrationLogLevel"] = ""
 			// todo: add this as a config option (byoi)
 			var isIntegrationScript bool
 			if val, ok := config["integrationScript"]; ok && val != nil {
 				isIntegrationScript = true
-			}
+			} 
 			moduleInstance["isIntegrationScript"] = isIntegrationScript
 			//moduleInstance["isLongRunning"] = false
 			//moduleInstance["mappingId"] = ""
@@ -176,7 +183,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			})
 		}
 	}
-
+	
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
 		Name:              types.String{Value: integration["name"].(string)},
@@ -184,8 +191,14 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:            plan.Config,
-		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
+		Config:			   plan.Config,
+	}
+
+	IncomingMapperId, ok := integration["incomingMapperId"].(string)
+	if ok {
+		result.IncomingMapperId = types.String{Value: IncomingMapperId}
+	} else {
+		result.IncomingMapperId = types.String{Null: true}
 	}
 
 	// Generate resource state struct
@@ -246,8 +259,14 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           state.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:            state.Config,
-		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
+		Config:			   state.Config,
+	}
+
+	IncomingMapperId, ok := integration["incomingMapperId"].(string)
+	if ok {
+		result.IncomingMapperId = types.String{Value: IncomingMapperId}
+	} else {
+		result.IncomingMapperId = types.String{Null: true}
 	}
 
 	// Generate resource state struct
@@ -304,7 +323,13 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 			//moduleInstance["engine"] = ""
 			//moduleInstance["engineGroup"] = ""
 			moduleInstance["id"] = state.Id.Value
-			moduleInstance["incomingMapperId"] = plan.IncomingMapperId.Value
+			var IncomingMapperId string
+			if ok := plan.IncomingMapperId.Value; ok != "" {
+				IncomingMapperId = plan.IncomingMapperId.Value
+			} else {
+				IncomingMapperId = ""
+			}
+			moduleInstance["incomingMapperId"] = IncomingMapperId
 			//moduleInstance["integrationLogLevel"] = ""
 			// todo: add this as a config option (byoi)
 			var isIntegrationScript bool
@@ -378,8 +403,14 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:            plan.Config,
-		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
+		Config:			   plan.Config,
+	}
+
+	IncomingMapperId, ok := integration["incomingMapperId"].(string)
+	if ok {
+		result.IncomingMapperId = types.String{Value: IncomingMapperId}
+	} else {
+		result.IncomingMapperId = types.String{Null: true}
 	}
 
 	// Set state
@@ -466,8 +497,14 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:            types.Map{},
-		IncomingMapperId:  types.String{Value: integration["incomingMapperId"].(string)},
+		Config:			   types.Map{},
+	}
+
+	IncomingMapperId, ok := integration["incomingMapperId"].(string)
+	if ok {
+		result.IncomingMapperId = types.String{Value: IncomingMapperId}
+	} else {
+		result.IncomingMapperId = types.String{Null: true}
 	}
 
 	if acc != "" {
