@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"io"
+	"log"
 )
 
 type resourceHAGroupType struct{}
@@ -88,6 +90,36 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		resp.Diagnostics.AddError(
 			"Error creating HA group",
 			"Could not create HA group "+plan.Name.Value+": "+err.Error(),
+		)
+		return
+	}
+
+	// todo: trigger the host installer build
+	haGroup, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, haGroup.GetId()).Execute()
+	if err != nil {
+		body, bodyErr := io.ReadAll(httpResponse.Body)
+		if bodyErr != nil {
+			log.Println("error reading body: " + bodyErr.Error())
+			return
+		}
+		log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+		resp.Diagnostics.AddError(
+			"Error getting HA group",
+			"Could not get HA group: "+err.Error(),
+		)
+		return
+	}
+	_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroup.GetId()).Execute()
+	if err != nil {
+		body, bodyErr := io.ReadAll(httpResponse.Body)
+		if bodyErr != nil {
+			log.Println("error reading body: " + bodyErr.Error())
+			return
+		}
+		log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+		resp.Diagnostics.AddError(
+			"Error creating HA installer",
+			"Could not create HA installer: "+err.Error(),
 		)
 		return
 	}

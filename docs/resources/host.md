@@ -47,7 +47,10 @@ resource "xsoar_host" "ha_example" {
 - **ssh_user** (Required) Username for the SSH connection.
 - **ssh_key** (Required) SSH private key content.
 - **ha_group_name** (Optional) The name of the HA group this host should join. Changing this will force a new resource.
+- **nfs_mount** (Optional) The directory path where the NFS volume is mounted on hosts within an HA group.
 - **elasticsearch_url** (Optional) The URL with scheme and port of the elasticsearch cluster. Not needed if using `ha_group_name`. Changing this will force a new resource.
+- **installation_timeout** (Optional) Number of seconds Terraform will wait to verify the host has joined the main server.
+- **extra_flags** (Optional) A list of strings to be added to the installation command as arguments. Example: `["-multi-tenant"]`.
 
 ## Attributes Reference
 - **id** The ID of the resource
