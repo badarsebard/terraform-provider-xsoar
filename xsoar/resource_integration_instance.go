@@ -39,6 +39,7 @@ func (r resourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.Sch
 			},
 			"propagation_labels": {
 				Type:     types.ListType{ElemType: types.StringType},
+				Computed: true,
 				Optional: true,
 			},
 			"account": {
