@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"reflect"
 )
 
 type resourceIntegrationInstanceType struct{}
@@ -35,7 +36,8 @@ func (r resourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.Sch
 			},
 			"config": {
 				Type:     types.MapType{ElemType: types.StringType},
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"propagation_labels": {
 				Type:     types.ListType{ElemType: types.StringType},
@@ -183,7 +185,41 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			})
 		}
 	}
-	
+
+	//var integrationConfigs map[string]attr.Value
+	integrationConfigs := make(map[string]attr.Value)
+	if integration["data"] == nil {
+		integrationConfigs = map[string]attr.Value{}
+		log.Println(integrationConfigs)
+	} else {
+		var integrationConfig map[string]interface{}
+		var valueattr attr.Value
+		switch reflect.TypeOf(integration["data"]).Kind() {
+			case reflect.Slice:
+				s := reflect.ValueOf(integration["data"])
+				for i := 0; i < s.Len(); i++ {
+					integrationConfig = s.Index(i).Interface().(map[string]interface{})
+					log.Println(integrationConfig)
+
+					valueconf, ok := integrationConfig["value"].(string)
+					if ok {
+						valueattr = types.String{ Value: valueconf,}
+					} else {
+						valueattr = types.String{ Value: "",}
+					}
+
+					nameconf, ok := integrationConfig["name"].(string)
+					if ok {
+						integrationConfigs[nameconf] = valueattr.(attr.Value)	
+					} else {
+						break
+					}							
+				}
+		}
+	}
+
+	log.Println(integrationConfigs)
+
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
 		Name:              types.String{Value: integration["name"].(string)},
@@ -191,7 +227,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   plan.Config,
+		Config:			   types.Map{Elems: integrationConfigs, ElemType: types.StringType},
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)
@@ -252,6 +288,38 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		}
 	}
 
+	//var integrationConfigs map[string]attr.Value
+	integrationConfigs := make(map[string]attr.Value)
+	if integration["data"] == nil {
+		integrationConfigs = map[string]attr.Value{}
+		log.Println(integrationConfigs)
+	} else {
+		var integrationConfig map[string]interface{}
+		var valueattr attr.Value
+		switch reflect.TypeOf(integration["data"]).Kind() {
+			case reflect.Slice:
+				s := reflect.ValueOf(integration["data"])
+				for i := 0; i < s.Len(); i++ {
+					integrationConfig = s.Index(i).Interface().(map[string]interface{})
+					log.Println(integrationConfig)
+
+					valueconf, ok := integrationConfig["value"].(string)
+					if ok {
+						valueattr = types.String{ Value: valueconf,}
+					} else {
+						valueattr = types.String{ Value: "",}
+					}
+
+					nameconf, ok := integrationConfig["name"].(string)
+					if ok {
+						integrationConfigs[nameconf] = valueattr.(attr.Value)	
+					} else {
+						break
+					}							
+				}
+		}
+	}
+
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
 		Name:              types.String{Value: integration["name"].(string)},
@@ -259,7 +327,7 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           state.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   state.Config,
+		Config:			   types.Map{Elems: integrationConfigs, ElemType: types.StringType},
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)
@@ -396,6 +464,38 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		}
 	}
 
+	//var integrationConfigs map[string]attr.Value
+	integrationConfigs := make(map[string]attr.Value)
+	if integration["data"] == nil {
+		integrationConfigs = map[string]attr.Value{}
+		log.Println(integrationConfigs)
+	} else {
+		var integrationConfig map[string]interface{}
+		var valueattr attr.Value
+		switch reflect.TypeOf(integration["data"]).Kind() {
+			case reflect.Slice:
+				s := reflect.ValueOf(integration["data"])
+				for i := 0; i < s.Len(); i++ {
+					integrationConfig = s.Index(i).Interface().(map[string]interface{})
+					log.Println(integrationConfig)
+
+					valueconf, ok := integrationConfig["value"].(string)
+					if ok {
+						valueattr = types.String{ Value: valueconf,}
+					} else {
+						valueattr = types.String{ Value: "",}
+					}
+
+					nameconf, ok := integrationConfig["name"].(string)
+					if ok {
+						integrationConfigs[nameconf] = valueattr.(attr.Value)	
+					} else {
+						break
+					}							
+				}
+		}
+	}
+
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
 		Name:              types.String{Value: integration["name"].(string)},
@@ -403,7 +503,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   plan.Config,
+		Config:			   types.Map{Elems: integrationConfigs, ElemType: types.StringType},
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)
@@ -491,13 +591,45 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		}
 	}
 
+	//var integrationConfigs map[string]attr.Value
+	integrationConfigs := make(map[string]attr.Value)
+	if integration["data"] == nil {
+		integrationConfigs = map[string]attr.Value{}
+		log.Println(integrationConfigs)
+	} else {
+		var integrationConfig map[string]interface{}
+		var valueattr attr.Value
+		switch reflect.TypeOf(integration["data"]).Kind() {
+			case reflect.Slice:
+				s := reflect.ValueOf(integration["data"])
+				for i := 0; i < s.Len(); i++ {
+					integrationConfig = s.Index(i).Interface().(map[string]interface{})
+					log.Println(integrationConfig)
+
+					valueconf, ok := integrationConfig["value"].(string)
+					if ok {
+						valueattr = types.String{ Value: valueconf,}
+					} else {
+						valueattr = types.String{ Value: "",}
+					}
+
+					nameconf, ok := integrationConfig["name"].(string)
+					if ok {
+						integrationConfigs[nameconf] = valueattr.(attr.Value)	
+					} else {
+						break
+					}							
+				}
+		}
+	}
+
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
 		Name:              types.String{Value: integration["name"].(string)},
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   types.Map{},
+		Config:			   types.Map{Elems: integrationConfigs, ElemType: types.StringType},
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)

@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"reflect"
 )
 
 type dataSourceIntegrationInstanceType struct{}
@@ -41,7 +42,7 @@ func (r dataSourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.S
 			},
 			"config": {
 				Type:     types.MapType{ElemType: types.StringType},
-				Optional: false,
+				Optional: true,
 				Computed: true,
 			},
 			"incoming_mapper_id": {
@@ -105,6 +106,38 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 		}
 	}
 
+	//var integrationConfigs map[string]attr.Value
+	integrationConfigs := make(map[string]attr.Value)
+	if integration["data"] == nil {
+		integrationConfigs = map[string]attr.Value{}
+		log.Println(integrationConfigs)
+	} else {
+		var integrationConfig map[string]interface{}
+		var valueattr attr.Value
+		switch reflect.TypeOf(integration["data"]).Kind() {
+			case reflect.Slice:
+				s := reflect.ValueOf(integration["data"])
+				for i := 0; i < s.Len(); i++ {
+					integrationConfig = s.Index(i).Interface().(map[string]interface{})
+					log.Println(integrationConfig)
+
+					valueconf, ok := integrationConfig["value"].(string)
+					if ok {
+						valueattr = types.String{ Value: valueconf,}
+					} else {
+						valueattr = types.String{ Value: "",}
+					}
+
+					nameconf, ok := integrationConfig["name"].(string)
+					if ok {
+						integrationConfigs[nameconf] = valueattr.(attr.Value)	
+					} else {
+						break
+					}							
+				}
+		}
+	}
+
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
 		Name:              types.String{Value: integration["name"].(string)},
@@ -112,7 +145,7 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           config.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:            config.Config,
+		Config:            types.Map{Elems: integrationConfigs, ElemType: types.StringType},
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)
