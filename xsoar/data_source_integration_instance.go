@@ -50,6 +50,11 @@ func (r dataSourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.S
 				Optional: true,
 				Computed: true,
 			},
+			"classifier_id": {
+				Type:     types.StringType,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -153,6 +158,13 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 		result.IncomingMapperId = types.String{Value: IncomingMapperId}
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
+	}
+
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
 	}
 
 	// Generate resource state struct

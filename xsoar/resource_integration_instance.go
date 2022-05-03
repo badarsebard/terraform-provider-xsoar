@@ -54,6 +54,11 @@ func (r resourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.Sch
 				Optional: true,
 				Computed: true,
 			},
+			"classifier_id": {
+				Type:     types.StringType,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -130,7 +135,13 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			} 
 			moduleInstance["isIntegrationScript"] = isIntegrationScript
 			//moduleInstance["isLongRunning"] = false
-			//moduleInstance["mappingId"] = ""
+			var MappingId string
+			if ok := plan.MappingId.Value; ok != "" {
+				MappingId = plan.MappingId.Value
+			} else {
+				MappingId = ""
+			}
+			moduleInstance["mappingId"] = MappingId
 			moduleInstance["name"] = plan.Name.Value
 			//moduleInstance["outgoingMapperId"] = ""
 			//moduleInstance["passwordProtected"] = false
@@ -236,6 +247,12 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
 	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
+	}
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
@@ -336,6 +353,12 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
 	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
+	}
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
@@ -406,7 +429,13 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 			}
 			moduleInstance["isIntegrationScript"] = isIntegrationScript
 			//moduleInstance["isLongRunning"] = false
-			//moduleInstance["mappingId"] = ""
+			var MappingId string
+			if ok := plan.MappingId.Value; ok != "" {
+				MappingId = plan.MappingId.Value
+			} else {
+				MappingId = ""
+			}
+			moduleInstance["mappingId"] = MappingId
 			moduleInstance["name"] = plan.Name.Value
 			//moduleInstance["outgoingMapperId"] = ""
 			//moduleInstance["passwordProtected"] = false
@@ -511,6 +540,12 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		result.IncomingMapperId = types.String{Value: IncomingMapperId}
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
+	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
 	}
 
 	// Set state
@@ -637,6 +672,12 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		result.IncomingMapperId = types.String{Value: IncomingMapperId}
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
+	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
 	}
 
 	if acc != "" {
