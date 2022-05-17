@@ -14,6 +14,11 @@ type Account struct {
 	PropagationLabels types.List   `tfsdk:"propagation_labels"`
 }
 
+// Accounts -
+type Accounts struct {
+	Accounts types.List `tfsdk:"accounts"`
+}
+
 // HAGroup -
 type HAGroup struct {
 	Name               types.String `tfsdk:"name"`
@@ -53,6 +58,8 @@ type IntegrationInstance struct {
 	Config            types.Map    `tfsdk:"config"`
 	PropagationLabels types.List   `tfsdk:"propagation_labels"`
 	Account           types.String `tfsdk:"account"`
+	IncomingMapperId  types.String `tfsdk:"incoming_mapper_id"`
+	MappingId  		  types.String `tfsdk:"classifier_id"`
 }
 
 // Classifier -

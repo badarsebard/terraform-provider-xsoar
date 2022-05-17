@@ -294,28 +294,47 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	var args = []string{
 		"-y",
-		"-external-address=" + plan.Name.Value,
+		"-external-address='" + plan.Name.Value + "'",
 	}
 	if isElastic && !isHA {
-		args = append(args, "-elasticsearch-url="+plan.ElasticsearchUrl.Value)
+		args = append(args, "-elasticsearch-url='"+plan.ElasticsearchUrl.Value+"'")
 	}
 	if isHA {
-		args = append(args, "-temp-folder=/tmp/demisto")
+		args = append(args, "-temp-folder='/tmp/demisto'")
 	}
 	if !plan.ExtraFlags.Null {
 		var extraArgs []string
-		plan.ExtraFlags.ElementsAs(ctx, extraArgs, false)
+		flagErr := plan.ExtraFlags.ElementsAs(ctx, &extraArgs, false)
+		if flagErr != nil {
+			resp.Diagnostics.AddError(
+				"Error extracting extra arguments",
+				fmt.Sprintf("Could not extract %s into extraArgs with error: %s", plan.ExtraFlags.Elems, flagErr),
+			)
+			return
+		}
+		log.Printf("extra args: %s\n", extraArgs)
 		args = append(args, extraArgs...)
 	}
 	argsString := strings.Join(args, " ")
 
 	err = session.Run("sudo /tmp/installer.sh -- " + argsString)
+	log.Printf("args: %s", argsString)
 	if err != nil {
-		log.Printf("args: %s", argsString)
 		resp.Diagnostics.AddError(
 			"Error running installer",
 			"Could not run installer: "+err.Error(),
 		)
+		log.Println("remove lock file")
+		session, err = conn.NewSession()
+		defer session.Close()
+		err = session.Run(fmt.Sprintf("sudo rm -f %s/xsoar_host_install.lock", plan.NFSMount.Value))
+		if err != nil {
+			log.Println("could not remove lock file")
+			resp.Diagnostics.AddError(
+				"Error removing lock file",
+				"Could not remove lock file: "+err.Error(),
+			)
+		}
 		return
 	}
 

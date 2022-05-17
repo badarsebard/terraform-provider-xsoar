@@ -95,7 +95,7 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	}
 
 	// todo: trigger the host installer build
-	haGroup, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, plan.Name.Value).Execute()
+	haGroup, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, haGroup.GetId()).Execute()
 	if err != nil {
 		body, bodyErr := io.ReadAll(httpResponse.Body)
 		if bodyErr != nil {
