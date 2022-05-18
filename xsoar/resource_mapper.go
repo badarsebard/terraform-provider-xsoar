@@ -202,9 +202,9 @@ func (r resourceMapper) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	var httpResponse *http.Response
 	var err error
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Id.Value).Execute()
+		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Name.Value).Execute()
 	} else {
-		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Id.Value).Execute()
+		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Name.Value).Execute()
 	}
 	if err != nil {
 		getBody, _ := httpResponse.Request.GetBody()

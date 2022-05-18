@@ -85,6 +85,7 @@ func (r dataSourceClassifier) Read(ctx context.Context, req tfsdk.ReadDataSource
 		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+config.Account.Value).SetIdentifier(config.Name.Value).Execute()
 	}
 	if err != nil {
+		log.Println(err.Error())
 		getBody, _ := httpResponse.Request.GetBody()
 		b, _ := io.ReadAll(getBody)
 		log.Println(string(b))
