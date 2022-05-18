@@ -219,9 +219,9 @@ func (r resourceClassifier) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	var httpResponse *http.Response
 	var err error
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Id.Value).Execute()
+		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Name.Value).Execute()
 	} else {
-		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Id.Value).Execute()
+		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Name.Value).Execute()
 	}
 	if err != nil {
 		getBody, _ := httpResponse.Request.GetBody()
