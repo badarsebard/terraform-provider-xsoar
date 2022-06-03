@@ -125,7 +125,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			var isIntegrationScript bool
 			if val, ok := config["integrationScript"]; ok && val != nil {
 				isIntegrationScript = true
-			} 
+			}
 			moduleInstance["isIntegrationScript"] = isIntegrationScript
 			//moduleInstance["isLongRunning"] = false
 			//moduleInstance["mappingId"] = ""
@@ -183,7 +183,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			})
 		}
 	}
-	
+
 	// Map response body to resource schema attribute
 	result := IntegrationInstance{
 		Name:              types.String{Value: integration["name"].(string)},
@@ -191,7 +191,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   plan.Config,
+		Config:            plan.Config,
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)
@@ -226,6 +226,22 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 	if state.Account.Null || len(state.Account.Value) == 0 {
 		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstance(ctx).SetIdentifier(state.Id.Value).Execute()
 	} else {
+		var account map[string]interface{}
+		account, httpResponse, err = r.p.client.DefaultApi.GetAccount(ctx, "acc_"+state.Account.Value).Execute()
+		if err != nil {
+			getBody := httpResponse.Body
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+			resp.Diagnostics.AddError(
+				"Error getting integration instance",
+				"Could not verify account existence: "+err.Error(),
+			)
+			return
+		}
+		if account == nil {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Id.Value).Execute()
 	}
 	if err != nil {
@@ -236,6 +252,11 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 			"Error getting integration instance",
 			"Could not get integration instance: "+err.Error(),
 		)
+		return
+	}
+
+	if integration == nil {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -259,7 +280,7 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           state.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   state.Config,
+		Config:            state.Config,
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)
@@ -342,8 +363,8 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 			moduleInstance["name"] = plan.Name.Value
 			//moduleInstance["outgoingMapperId"] = ""
 			//moduleInstance["passwordProtected"] = false
-			var propLabels []string	
-			plan.PropagationLabels.ElementsAs(ctx, propLabels, false)	
+			var propLabels []string
+			plan.PropagationLabels.ElementsAs(ctx, propLabels, false)
 			moduleInstance["propagationLabels"] = propLabels
 			//moduleInstance["resetContext"] = false
 			moduleInstance["version"] = -1
@@ -372,8 +393,8 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 	} else {
 		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 	}
-	getBody := httpResponse.Body	
-	b, _ := io.ReadAll(getBody)	
+	getBody := httpResponse.Body
+	b, _ := io.ReadAll(getBody)
 	log.Println(string(b))
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -403,7 +424,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   plan.Config,
+		Config:            plan.Config,
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)
@@ -497,7 +518,7 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
-		Config:			   types.Map{},
+		Config:            types.Map{},
 	}
 
 	IncomingMapperId, ok := integration["incomingMapperId"].(string)

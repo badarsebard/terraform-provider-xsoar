@@ -300,7 +300,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		args = append(args, "-elasticsearch-url='"+plan.ElasticsearchUrl.Value+"'")
 	}
 	if isHA {
-		args = append(args, "-temp-folder='/tmp/demisto'")
+		args = append(args, "-temp-folder='/tmp/demisto'", "-ha")
 	}
 	if !plan.ExtraFlags.Null {
 		var extraArgs []string
