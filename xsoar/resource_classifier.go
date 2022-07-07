@@ -134,9 +134,12 @@ func (r resourceClassifier) Create(ctx context.Context, req tfsdk.CreateResource
 		classifier, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(classifierRequest).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			getBody, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error creating classifier",
 			"Could not create classifier: "+err.Error(),
@@ -224,9 +227,12 @@ func (r resourceClassifier) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Name.Value).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			getBody, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error getting classifier",
 			"Could not get classifier: "+err.Error(),
@@ -358,9 +364,12 @@ func (r resourceClassifier) Update(ctx context.Context, req tfsdk.UpdateResource
 		classifier, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(classifierRequest).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			getBody, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error updating classifier",
 			"Could not update classifier: "+err.Error(),
@@ -447,9 +456,12 @@ func (r resourceClassifier) Delete(ctx context.Context, req tfsdk.DeleteResource
 		httpResponse, err = r.p.client.DefaultApi.DeleteClassifierAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
 	}
 	if err != nil {
-		getBody := httpResponse.Body
-		b, _ := io.ReadAll(getBody)
-		fmt.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			getBody := httpResponse.Body
+			b, _ := io.ReadAll(getBody)
+			fmt.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error deleting mapper",
 			"Could not delete mapper: "+err.Error(),

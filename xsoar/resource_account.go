@@ -128,9 +128,12 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
 		log.Printf("creating account")
 		if err != nil {
-			body, _ := io.ReadAll(httpResponse.Body)
-			payload, _ := io.ReadAll(httpResponse.Request.Body)
-			log.Printf("%s : %s - %s\n", payload, httpResponse.Status, body)
+			log.Println(err.Error())
+			if httpResponse != nil {
+				body, _ := io.ReadAll(httpResponse.Body)
+				payload, _ := io.ReadAll(httpResponse.Request.Body)
+				log.Printf("%s : %s - %s\n", payload, httpResponse.Status, body)
+			}
 			time.Sleep(60 * time.Second)
 			return resource.RetryableError(fmt.Errorf("error creating instance: %s", err))
 		}
@@ -540,11 +543,12 @@ func (r resourceAccount) Delete(ctx context.Context, req tfsdk.DeleteResourceReq
 		if account != nil {
 			_, httpResponse, err := r.p.client.DefaultApi.DeleteAccount(ctx, accName).Execute()
 			if err != nil {
-				body, bodyErr := io.ReadAll(httpResponse.Body)
-				if bodyErr != nil {
-					log.Println("error reading body: " + bodyErr.Error())
+				log.Println(err.Error())
+				if httpResponse != nil {
+					body, _ := io.ReadAll(httpResponse.Body)
+					payload, _ := io.ReadAll(httpResponse.Request.Body)
+					log.Printf("code: %d status: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body), string(payload))
 				}
-				log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
 				return resource.RetryableError(fmt.Errorf("error deleting instance: %s", err))
 			}
 		}

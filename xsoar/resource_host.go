@@ -168,11 +168,8 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		}
 		_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroupId).Execute()
 		if err != nil {
-			body, bodyErr := io.ReadAll(httpResponse.Body)
-			if bodyErr != nil {
-				log.Println("error reading body: " + bodyErr.Error())
-				return
-			}
+			log.Println(err.Error())
+			body, _ := io.ReadAll(httpResponse.Body)
 			log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
 			i := bytes.Index(body, []byte("Already building host for ha group"))
 			if i > -1 {
@@ -193,6 +190,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 	} else {
 		_, httpResponse, err = r.p.client.DefaultApi.CreateHostInstaller(ctx).Execute()
 		if err != nil {
+			log.Println(err.Error())
 			body, bodyErr := io.ReadAll(httpResponse.Body)
 			if bodyErr != nil {
 				log.Println("error reading body: " + bodyErr.Error())
@@ -392,12 +390,12 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 
 	haGroupName, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
-		body, bodyErr := io.ReadAll(httpResponse.Body)
-		if bodyErr != nil {
-			log.Println("error reading body: " + bodyErr.Error())
-			return
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
 		}
-		log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
 			"Could not get HA group: "+err.Error(),
@@ -482,12 +480,12 @@ func (r resourceHost) Read(ctx context.Context, req tfsdk.ReadResourceRequest, r
 
 	haGroupName, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, hostGroupId).Execute()
 	if err != nil {
-		body, bodyErr := io.ReadAll(httpResponse.Body)
-		if bodyErr != nil {
-			log.Println("error reading body: " + bodyErr.Error())
-			return
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
 		}
-		log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
 			"Could not get HA group: "+err.Error(),

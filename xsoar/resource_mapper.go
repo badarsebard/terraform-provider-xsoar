@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -142,12 +142,15 @@ func (r resourceMapper) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		mapper, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(mapperRequest).Execute()
 	}
 	if err != nil {
-		getBody := httpResponse.Body
-		b, _ := io.ReadAll(getBody)
-		fmt.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := ioutil.ReadAll(httpResponse.Body)
+			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error creating mapper",
-			"Could not create mapper: "+err.Error()+" "+string(b),
+			"Could not create mapper: "+err.Error(),
 		)
 		return
 	}
@@ -207,9 +210,12 @@ func (r resourceMapper) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Name.Value).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := ioutil.ReadAll(httpResponse.Body)
+			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error creating classifier",
 			"Could not create classifier: "+err.Error(),
@@ -300,9 +306,12 @@ func (r resourceMapper) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 		mapper, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(mapperRequest).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := ioutil.ReadAll(httpResponse.Body)
+			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error updating mapper",
 			"Could not update mapper: "+err.Error(),
@@ -364,9 +373,12 @@ func (r resourceMapper) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 		httpResponse, err = r.p.client.DefaultApi.DeleteClassifierAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
 	}
 	if err != nil {
-		getBody := httpResponse.Body
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := ioutil.ReadAll(httpResponse.Body)
+			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error deleting mapper",
 			"Could not delete mapper: "+err.Error(),

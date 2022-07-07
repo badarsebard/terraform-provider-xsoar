@@ -94,15 +94,14 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 
-	// todo: trigger the host installer build
 	haGroup, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, haGroup.GetId()).Execute()
 	if err != nil {
-		body, bodyErr := io.ReadAll(httpResponse.Body)
-		if bodyErr != nil {
-			log.Println("error reading body: " + bodyErr.Error())
-			return
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body), string(payload))
 		}
-		log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
 			"Could not get HA group: "+err.Error(),
@@ -111,12 +110,12 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	}
 	_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroup.GetId()).Execute()
 	if err != nil {
-		body, bodyErr := io.ReadAll(httpResponse.Body)
-		if bodyErr != nil {
-			log.Println("error reading body: " + bodyErr.Error())
-			return
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body), string(payload))
 		}
-		log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
 		resp.Diagnostics.AddError(
 			"Error creating HA installer",
 			"Could not create HA installer: "+err.Error(),

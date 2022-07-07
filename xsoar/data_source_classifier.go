@@ -86,9 +86,11 @@ func (r dataSourceClassifier) Read(ctx context.Context, req tfsdk.ReadDataSource
 	}
 	if err != nil {
 		log.Println(err.Error())
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		if httpResponse != nil {
+			getBody, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error getting classifier",
 			"Could not get classifier: "+err.Error(),

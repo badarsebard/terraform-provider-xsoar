@@ -81,9 +81,11 @@ func (r dataSourceMapper) Read(ctx context.Context, req tfsdk.ReadDataSourceRequ
 	}
 	if err != nil {
 		log.Println(err.Error())
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		if httpResponse != nil {
+			getBody, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error creating classifier",
 			"Could not create classifier: "+err.Error(),

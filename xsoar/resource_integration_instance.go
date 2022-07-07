@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -160,10 +161,13 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	} else {
 		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 	}
-	getBody := httpResponse.Body
-	b, _ := io.ReadAll(getBody)
-	log.Println(string(b))
 	if err != nil {
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error creating integration instance",
 			"Could not create integration instance: "+err.Error(),
@@ -229,9 +233,12 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		var account map[string]interface{}
 		account, httpResponse, err = r.p.client.DefaultApi.GetAccount(ctx, "acc_"+state.Account.Value).Execute()
 		if err != nil {
-			getBody := httpResponse.Body
-			b, _ := io.ReadAll(getBody)
-			log.Println(string(b))
+			log.Println(err.Error())
+			if httpResponse != nil {
+				body, _ := io.ReadAll(httpResponse.Body)
+				payload, _ := io.ReadAll(httpResponse.Request.Body)
+				log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+			}
 			resp.Diagnostics.AddError(
 				"Error getting integration instance",
 				"Could not verify account existence: "+err.Error(),
@@ -245,9 +252,12 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Id.Value).Execute()
 	}
 	if err != nil {
-		getBody := httpResponse.Body
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error getting integration instance",
 			"Could not get integration instance: "+err.Error(),
@@ -393,10 +403,13 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 	} else {
 		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 	}
-	getBody := httpResponse.Body
-	b, _ := io.ReadAll(getBody)
-	log.Println(string(b))
 	if err != nil {
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := ioutil.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error updating integration instance",
 			"Could not update integration instance: "+err.Error(),
