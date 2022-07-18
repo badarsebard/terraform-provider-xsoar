@@ -109,7 +109,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	createAccountRequest.SetName(plan.Name.Value)
 	if !plan.AccountRoles.Null && len(plan.AccountRoles.Elems) > 0 {
 		var accountRoles []string
-		plan.AccountRoles.ElementsAs(ctx, accountRoles, true)
+		plan.AccountRoles.ElementsAs(ctx, &accountRoles, true)
 		createAccountRequest.SetAccountRoles(accountRoles)
 	} else {
 		createAccountRequest.SetAccountRoles([]string{"Administrator"})
@@ -123,7 +123,6 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 	// Create new account
 	var accounts []map[string]interface{}
-	log.Printf("%+v\n", createAccountRequest)
 	err = resource.RetryContext(ctx, 600*time.Second, func() *resource.RetryError {
 		log.Printf("creating account")
 		var httpResponse *http.Response
