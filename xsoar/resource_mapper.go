@@ -65,7 +65,7 @@ func (r resourceMapperType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Dia
 				Computed: true,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Optional: true,
 				Computed: true,
 			},

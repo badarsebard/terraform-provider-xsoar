@@ -33,7 +33,7 @@ func (r dataSourceMapperType) GetSchema(_ context.Context) (tfsdk.Schema, diag.D
 				Optional: false,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},

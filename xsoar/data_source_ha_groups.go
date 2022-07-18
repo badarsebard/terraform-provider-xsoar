@@ -23,15 +23,15 @@ func (r dataSourceHAGroupsType) GetSchema(_ context.Context) (tfsdk.Schema, diag
 				Optional: true,
 			},
 			"groups": {
-				Type: types.ListType{
+				Type: types.SetType{
 					ElemType: types.ObjectType{
 						AttrTypes: map[string]attr.Type{
 							"name":                 types.StringType,
 							"id":                   types.StringType,
 							"elasticsearch_url":    types.StringType,
 							"elastic_index_prefix": types.StringType,
-							"account_ids":          types.ListType{ElemType: types.StringType},
-							"host_ids":             types.ListType{ElemType: types.StringType},
+							"account_ids":          types.SetType{ElemType: types.StringType},
+							"host_ids":             types.SetType{ElemType: types.StringType},
 						},
 					},
 				},
@@ -80,8 +80,8 @@ func (r dataSourceHAGroups) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				"id":                   types.StringType,
 				"elasticsearch_url":    types.StringType,
 				"elastic_index_prefix": types.StringType,
-				"account_ids":          types.ListType{ElemType: types.StringType},
-				"host_ids":             types.ListType{ElemType: types.StringType},
+				"account_ids":          types.SetType{ElemType: types.StringType},
+				"host_ids":             types.SetType{ElemType: types.StringType},
 			},
 		},
 	}
@@ -109,13 +109,13 @@ func (r dataSourceHAGroups) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				"id":                   types.String{Null: true},
 				"elasticsearch_url":    types.String{Null: true},
 				"elastic_index_prefix": types.String{Null: true},
-				"account_ids": types.List{
+				"account_ids": types.Set{
 					Unknown:  false,
 					Null:     false,
 					Elems:    nil,
 					ElemType: types.StringType,
 				},
-				"host_ids": types.List{
+				"host_ids": types.Set{
 					Unknown:  false,
 					Null:     false,
 					Elems:    nil,
@@ -127,8 +127,8 @@ func (r dataSourceHAGroups) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				"id":                   types.StringType,
 				"elasticsearch_url":    types.StringType,
 				"elastic_index_prefix": types.StringType,
-				"account_ids":          types.ListType{ElemType: types.StringType},
-				"host_ids":             types.ListType{ElemType: types.StringType},
+				"account_ids":          types.SetType{ElemType: types.StringType},
+				"host_ids":             types.SetType{ElemType: types.StringType},
 			},
 		}
 		// assign the values from the response to the object
@@ -154,7 +154,7 @@ func (r dataSourceHAGroups) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 			for _, a := range groupAccountIds {
 				elems = append(elems, types.String{Value: a.(string)})
 			}
-			groupObject.Attrs["account_ids"] = types.List{
+			groupObject.Attrs["account_ids"] = types.Set{
 				Unknown:  false,
 				Null:     false,
 				Elems:    elems,
@@ -168,7 +168,7 @@ func (r dataSourceHAGroups) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				elems = append(elems, types.String{Value: h.(string)})
 			}
 
-			groupObject.Attrs["host_ids"] = types.List{
+			groupObject.Attrs["host_ids"] = types.Set{
 				Unknown:  false,
 				Null:     false,
 				Elems:    elems,

@@ -28,12 +28,12 @@ func (r dataSourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 				Optional: false,
 			},
 			"account_roles": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},

@@ -29,11 +29,11 @@ func (r dataSourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 				Computed: true,
 			},
 			"account_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 			"host_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 		},

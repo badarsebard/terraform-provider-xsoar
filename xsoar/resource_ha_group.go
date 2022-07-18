@@ -38,11 +38,11 @@ func (r resourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 			},
 			// todo: add missing ES parameters
 			"account_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 			"host_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 		},

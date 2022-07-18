@@ -68,7 +68,7 @@ type Classifier struct {
 	DefaultIncidentType types.String `tfsdk:"default_incident_type"`
 	KeyTypeMap          types.String `tfsdk:"key_type_map"`
 	Transformer         types.String `tfsdk:"transformer"`
-	PropagationLabels   types.List   `tfsdk:"propagation_labels"`
+	PropagationLabels   types.Set    `tfsdk:"propagation_labels"`
 	Account             types.String `tfsdk:"account"`
 }
 

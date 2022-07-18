@@ -47,7 +47,7 @@ func (r resourceClassifierType) GetSchema(_ context.Context) (tfsdk.Schema, diag
 				Computed: true,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Optional: true,
 				Computed: true,
 			},
@@ -180,7 +180,7 @@ func (r resourceClassifier) Create(ctx context.Context, req tfsdk.CreateResource
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {
@@ -273,7 +273,7 @@ func (r resourceClassifier) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           state.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {
@@ -410,7 +410,7 @@ func (r resourceClassifier) Update(ctx context.Context, req tfsdk.UpdateResource
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {
@@ -526,7 +526,7 @@ func (r resourceClassifier) ImportState(ctx context.Context, req tfsdk.ImportRes
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 	}
 	if len(accname) == 1 {
 		result.Account = types.String{Null: true}

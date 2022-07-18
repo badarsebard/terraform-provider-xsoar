@@ -43,7 +43,7 @@ func (r dataSourceClassifierType) GetSchema(_ context.Context) (tfsdk.Schema, di
 				Optional: false,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},
@@ -131,7 +131,7 @@ func (r dataSourceClassifier) Read(ctx context.Context, req tfsdk.ReadDataSource
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           config.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {

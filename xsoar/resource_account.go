@@ -44,7 +44,7 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				PlanModifiers: append(planModifiers, tfsdk.RequiresReplace()),
 			},
 			"propagation_labels": {
-				Type: types.ListType{
+				Type: types.SetType{
 					ElemType: types.StringType,
 				},
 				Optional: true,
