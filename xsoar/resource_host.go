@@ -311,6 +311,7 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 			return
 		}
 		log.Printf("extra args: %s\n", extraArgs)
+		// todo: there's a security flaw here where a user can inject arbitrary commands into the installer
 		args = append(args, extraArgs...)
 	}
 	argsString := strings.Join(args, " ")
