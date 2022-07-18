@@ -26,7 +26,7 @@ resource "xsoar_host" "example" {
 
 resource "xsoar_host" "es_example" {
   name = "foo"
-  elasticsearch_url = "http://elastic.example.com:9200"
+  elasticsearch_url = "https://elastic.example.com:9200"
   server_url = "foo.example.com:22"
   ssh_user = "sshuser"
   ssh_key = file("/home/sshuser/.ssh/id_rsa")

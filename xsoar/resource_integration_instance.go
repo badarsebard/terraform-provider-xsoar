@@ -194,7 +194,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
-		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
 	}
 
@@ -289,7 +289,7 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           state.Account,
-		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            state.Config,
 	}
 
@@ -436,7 +436,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           plan.Account,
-		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            plan.Config,
 	}
 
@@ -530,7 +530,7 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		Name:              types.String{Value: integration["name"].(string)},
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
-		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            types.Map{},
 	}
 

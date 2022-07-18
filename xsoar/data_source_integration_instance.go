@@ -114,7 +114,7 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           config.Account,
-		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            config.Config,
 	}
 

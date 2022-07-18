@@ -172,7 +172,7 @@ func (r resourceMapper) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 		Direction:         plan.Direction,
 	}
@@ -239,7 +239,7 @@ func (r resourceMapper) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           state.Account,
 		Direction:         state.Direction,
 	}
@@ -336,7 +336,7 @@ func (r resourceMapper) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 		Direction:         plan.Direction,
 	}
@@ -437,7 +437,7 @@ func (r resourceMapper) ImportState(ctx context.Context, req tfsdk.ImportResourc
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Direction:         types.String{Value: direction},
 	}
 	if m := string(mapping); m == "null" {

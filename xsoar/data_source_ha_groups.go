@@ -70,7 +70,7 @@ func (r dataSourceHAGroups) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 		return
 	}
 
-	var haGroupsGroups = types.List{
+	var haGroupsGroups = types.Set{
 		Unknown: false,
 		Null:    false,
 		Elems:   nil,

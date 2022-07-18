@@ -109,7 +109,7 @@ func (r dataSourceMapper) Read(ctx context.Context, req tfsdk.ReadDataSourceRequ
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           config.Account,
 		Direction:         config.Direction,
 	}

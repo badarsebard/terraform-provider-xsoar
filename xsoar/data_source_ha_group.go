@@ -90,13 +90,13 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    nil,
 			ElemType: nil,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    nil,

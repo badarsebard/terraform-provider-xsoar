@@ -139,12 +139,12 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: nil,
@@ -205,12 +205,12 @@ func (r resourceHAGroup) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
@@ -283,12 +283,12 @@ func (r resourceHAGroup) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: nil,
@@ -385,12 +385,12 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: nil,

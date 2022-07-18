@@ -23,7 +23,7 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"account_roles": {
-				Type: types.ListType{
+				Type: types.SetType{
 					ElemType: types.StringType,
 				},
 				Optional: true,
@@ -194,13 +194,13 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 				Name:          types.String{Value: account["displayName"].(string)},
 				HostGroupName: types.String{Value: hostGroupName},
 				HostGroupId:   types.String{Value: hostGroupId},
-				PropagationLabels: types.List{
+				PropagationLabels: types.Set{
 					Unknown:  false,
 					Null:     false,
 					Elems:    propagationLabels,
 					ElemType: types.StringType,
 				},
-				AccountRoles: types.List{
+				AccountRoles: types.Set{
 					Unknown:  false,
 					Null:     false,
 					Elems:    roles,
@@ -306,13 +306,13 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		Name:          types.String{Value: account["displayName"].(string)},
 		HostGroupName: types.String{Value: hostGroupName},
 		HostGroupId:   types.String{Value: account["hostGroupId"].(string)},
-		PropagationLabels: types.List{
+		PropagationLabels: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    propagationLabels,
 			ElemType: types.StringType,
 		},
-		AccountRoles: types.List{
+		AccountRoles: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    roles,
@@ -503,13 +503,13 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		Name:          types.String{Value: account["displayName"].(string)},
 		HostGroupName: types.String{Value: hostGroupName},
 		HostGroupId:   types.String{Value: account["hostGroupId"].(string)},
-		PropagationLabels: types.List{
+		PropagationLabels: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    propagationLabels,
 			ElemType: types.StringType,
 		},
-		AccountRoles: types.List{
+		AccountRoles: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    roles,
@@ -635,13 +635,13 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 	var state = Account{
 		Name:          types.String{Value: account["displayName"].(string)},
 		HostGroupName: types.String{Value: hostGroupName},
-		PropagationLabels: types.List{
+		PropagationLabels: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    propagationLabels,
 			ElemType: types.StringType,
 		},
-		AccountRoles: types.List{
+		AccountRoles: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    roles,

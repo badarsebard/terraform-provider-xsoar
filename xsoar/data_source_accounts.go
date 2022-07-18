@@ -77,7 +77,7 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 		return
 	}
 
-	var accountsAccounts = types.List{
+	var accountsAccounts = types.Set{
 		Unknown: false,
 		Null:    false,
 		Elems:   nil,
