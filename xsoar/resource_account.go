@@ -123,6 +123,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 	// Create new account
 	var accounts []map[string]interface{}
+	log.Printf("%+v\n", createAccountRequest)
 	err = resource.RetryContext(ctx, 600*time.Second, func() *resource.RetryError {
 		log.Printf("creating account")
 		var httpResponse *http.Response
