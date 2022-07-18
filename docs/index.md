@@ -1,5 +1,4 @@
 # Terraform XSOAR Provider
-_**This is an early Alpha release and not recommended for production usage**_
 
 The Terraform XSOAR provider is a plugin for Terraform that allows for the management and configuration of Palo Alto's Cortex XSOAR platform. This provider can be used to manage single server and multi-tenant architectures, hosts with elastic backends, and high availability groups. 
 
