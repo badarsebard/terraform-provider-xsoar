@@ -227,6 +227,13 @@ func (r resourceClassifier) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Name.Value).Execute()
 	}
 	if err != nil {
+		// determine if the error is a not found error or not
+		if _, ok := err.(openapi.GenericOpenAPIError); ok {
+			log.Println("Classifier not found")
+			// Remove resource from state
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		log.Println(err.Error())
 		if httpResponse != nil {
 			getBody, _ := httpResponse.Request.GetBody()
