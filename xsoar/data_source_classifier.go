@@ -151,7 +151,7 @@ func (r dataSourceClassifier) Read(ctx context.Context, req tfsdk.ReadDataSource
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &config)
+	diags = resp.State.Set(ctx, result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

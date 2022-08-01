@@ -120,7 +120,7 @@ func (r dataSourceMapper) Read(ctx context.Context, req tfsdk.ReadDataSourceRequ
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &config)
+	diags = resp.State.Set(ctx, result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
