@@ -139,14 +139,6 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		}
 		return nil
 	})
-	details, _, err := r.p.client.DefaultApi.ListAccountsDetails(ctx).Execute()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error listing account details",
-			"Could not read account details"+err.Error(),
-		)
-		return
-	}
 
 	// Map response body to resource schema attribute
 	var result Account
@@ -175,18 +167,17 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 			}
 
 			var roles []attr.Value
-			for _, detail := range details {
-				castDetail := detail.(map[string]interface{})
-				if account["name"].(string) == castDetail["name"].(string) {
-					roleObjects := castDetail["roles"].([]interface{})
-					for _, roleObject := range roleObjects {
-						roleName := roleObject.(map[string]interface{})["name"]
-						roles = append(roles, types.String{
-							Unknown: false,
-							Null:    false,
-							Value:   roleName.(string),
-						})
-					}
+			if account["roles"] == nil {
+				roles = []attr.Value{}
+			} else {
+				rolesMap := account["roles"].(map[string]interface{})
+				roles = make([]attr.Value, len(rolesMap))
+				for _, r := range rolesMap["roles"].([]interface{}) {
+					roles = append(roles, types.String{
+						Unknown: false,
+						Null:    false,
+						Value:   r.(string),
+					})
 				}
 			}
 
