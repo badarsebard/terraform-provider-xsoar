@@ -59,6 +59,7 @@ type IntegrationInstance struct {
 	PropagationLabels types.Set    `tfsdk:"propagation_labels"`
 	Account           types.String `tfsdk:"account"`
 	IncomingMapperId  types.String `tfsdk:"incoming_mapper_id"`
+	MappingId         types.String `tfsdk:"mapping_id"`
 }
 
 // Classifier -
