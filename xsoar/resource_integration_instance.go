@@ -217,6 +217,12 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
 	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
+	}
 
 	// Generate resource state struct
 	diags = resp.State.Set(ctx, result)
@@ -311,6 +317,12 @@ func (r resourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadRes
 		result.IncomingMapperId = types.String{Value: IncomingMapperId}
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
+	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
 	}
 
 	// Generate resource state struct
@@ -459,6 +471,12 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
 	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
+	}
 
 	// Set state
 	diags = resp.State.Set(ctx, result)
@@ -552,6 +570,12 @@ func (r resourceIntegrationInstance) ImportState(ctx context.Context, req tfsdk.
 		result.IncomingMapperId = types.String{Value: IncomingMapperId}
 	} else {
 		result.IncomingMapperId = types.String{Null: true}
+	}
+	MappingId, ok := integration["mappingId"].(string)
+	if ok {
+		result.MappingId = types.String{Value: MappingId}
+	} else {
+		result.MappingId = types.String{Null: true}
 	}
 
 	if acc != "" {
