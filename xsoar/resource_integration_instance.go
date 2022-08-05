@@ -129,7 +129,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			moduleInstance["incomingMapperId"] = IncomingMapperId
 			var MappingId string
 			if ok := plan.MappingId.Value; ok != "" {
-				MappingId = plan.IncomingMapperId.Value
+				MappingId = plan.MappingId.Value
 			} else {
 				MappingId = ""
 			}
@@ -388,7 +388,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 			moduleInstance["incomingMapperId"] = IncomingMapperId
 			var MappingId string
 			if ok := plan.MappingId.Value; ok != "" {
-				MappingId = plan.IncomingMapperId.Value
+				MappingId = plan.MappingId.Value
 			} else {
 				MappingId = ""
 			}
