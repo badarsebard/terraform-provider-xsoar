@@ -13,8 +13,10 @@ import (
 
 var _ = os.Stderr
 
-func New() tfsdk.Provider {
-	return &provider{}
+func New() func() tfsdk.Provider {
+	return func() tfsdk.Provider {
+		return &provider{}
+	}
 }
 
 type provider struct {

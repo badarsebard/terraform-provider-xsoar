@@ -2,12 +2,20 @@ package main
 
 import (
 	"context"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"log"
 	"terraform-provider-xsoar/xsoar"
+
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
 func main() {
-	_ = tfsdk.Serve(context.Background(), xsoar.New, tfsdk.ServeOpts{
-		Name: "xsoar",
-	})
+	opts := providerserver.ServeOpts{
+		Address: "registry.terraform.io/badarsebard/xsoar",
+	}
+
+	err := providerserver.Serve(context.Background(), xsoar.New(), opts)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

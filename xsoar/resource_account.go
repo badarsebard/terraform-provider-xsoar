@@ -159,8 +159,8 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 			var hostGroupName string
 			for _, group := range haGroups {
-				hostGroupId, ok := account["hostGroupId"].(string)
-				if ok && group["id"].(string) == hostGroupId {
+				hgi, ok := account["hostGroupId"].(string)
+				if ok && group["id"].(string) == hgi {
 					hostGroupName = group["name"].(string)
 					break
 				}
@@ -171,13 +171,18 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 				roles = []attr.Value{}
 			} else {
 				rolesMap := account["roles"].(map[string]interface{})
-				roles = make([]attr.Value, len(rolesMap))
-				for _, r := range rolesMap["roles"].([]interface{}) {
-					roles = append(roles, types.String{
-						Unknown: false,
-						Null:    false,
-						Value:   r.(string),
-					})
+				rolesMapRoles := rolesMap["roles"].([]interface{})
+				var role string
+				var ok bool
+				for _, roleInterface := range rolesMapRoles {
+					role, ok = roleInterface.(string)
+					if ok {
+						roles = append(roles, types.String{
+							Unknown: false,
+							Null:    false,
+							Value:   role,
+						})
+					}
 				}
 			}
 
