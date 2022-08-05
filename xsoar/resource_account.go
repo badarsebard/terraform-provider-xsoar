@@ -510,7 +510,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, result)
+	diags = resp.State.Set(ctx, &result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
