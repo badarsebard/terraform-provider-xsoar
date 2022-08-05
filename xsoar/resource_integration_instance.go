@@ -386,6 +386,13 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 				IncomingMapperId = ""
 			}
 			moduleInstance["incomingMapperId"] = IncomingMapperId
+			var MappingId string
+			if ok := plan.MappingId.Value; ok != "" {
+				MappingId = plan.IncomingMapperId.Value
+			} else {
+				MappingId = ""
+			}
+			moduleInstance["mappingId"] = MappingId
 			//moduleInstance["integrationLogLevel"] = ""
 			// todo: add this as a config option (byoi)
 			var isIntegrationScript bool
