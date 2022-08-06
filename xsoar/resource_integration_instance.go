@@ -157,9 +157,11 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	for _, parameter := range moduleConfiguration {
 		param := parameter.(map[string]interface{})
 		param["hasvalue"] = false
-		for configName, configValue := range plan.Config.Elems {
+		var configs map[string]string
+		plan.Config.ElementsAs(ctx, &configs, false)
+		for configName, configValue := range configs {
 			if param["display"].(string) == configName || param["name"].(string) == configName {
-				param["value"], _ = configValue.ToTerraformValue(ctx)
+				param["value"] = configValue
 				param["hasvalue"] = true
 				break
 			}
@@ -174,13 +176,13 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	} else {
 		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
 	}
+	if httpResponse != nil {
+		body, _ := io.ReadAll(httpResponse.Body)
+		payload, _ := io.ReadAll(httpResponse.Request.Body)
+		log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+	}
 	if err != nil {
 		log.Println(err.Error())
-		if httpResponse != nil {
-			body, _ := io.ReadAll(httpResponse.Body)
-			payload, _ := io.ReadAll(httpResponse.Request.Body)
-			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
-		}
 		resp.Diagnostics.AddError(
 			"Error creating integration instance",
 			"Could not create integration instance: "+err.Error(),
