@@ -157,8 +157,8 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	for _, parameter := range moduleConfiguration {
 		param := parameter.(map[string]interface{})
 		param["hasvalue"] = false
-		var configs map[string]string
-		plan.Config.ElementsAs(ctx, &configs, false)
+		var configs map[string]interface{}
+		plan.Config.ElementsAs(ctx, configs, false)
 		for configName, configValue := range configs {
 			if param["display"].(string) == configName || param["name"].(string) == configName {
 				param["value"] = configValue
