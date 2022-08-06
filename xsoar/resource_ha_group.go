@@ -147,7 +147,7 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 
@@ -291,7 +291,7 @@ func (r resourceHAGroup) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 
@@ -393,7 +393,7 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 
