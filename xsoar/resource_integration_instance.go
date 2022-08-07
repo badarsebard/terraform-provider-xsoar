@@ -154,11 +154,11 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 			break
 		}
 	}
+	var configs map[string]string
+	plan.Config.ElementsAs(ctx, &configs, true)
 	for _, parameter := range moduleConfiguration {
 		param := parameter.(map[string]interface{})
 		param["hasvalue"] = false
-		var configs map[string]interface{}
-		plan.Config.ElementsAs(ctx, configs, false)
 		for configName, configValue := range configs {
 			if param["display"].(string) == configName || param["name"].(string) == configName {
 				param["value"] = configValue
@@ -178,8 +178,7 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 	}
 	if httpResponse != nil {
 		body, _ := io.ReadAll(httpResponse.Body)
-		payload, _ := io.ReadAll(httpResponse.Request.Body)
-		log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
 	}
 	if err != nil {
 		log.Println(err.Error())
