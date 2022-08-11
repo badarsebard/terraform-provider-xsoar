@@ -94,13 +94,13 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 			Unknown:  false,
 			Null:     false,
 			Elems:    nil,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 		HostIds: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    nil,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 

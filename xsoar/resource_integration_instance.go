@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -439,7 +438,7 @@ func (r resourceIntegrationInstance) Update(ctx context.Context, req tfsdk.Updat
 	if err != nil {
 		log.Println(err.Error())
 		if httpResponse != nil {
-			body, _ := ioutil.ReadAll(httpResponse.Body)
+			body, _ := io.ReadAll(httpResponse.Body)
 			payload, _ := io.ReadAll(httpResponse.Request.Body)
 			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
 		}

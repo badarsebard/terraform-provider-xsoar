@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -144,8 +144,8 @@ func (r resourceMapper) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	if err != nil {
 		log.Println(err.Error())
 		if httpResponse != nil {
-			body, _ := ioutil.ReadAll(httpResponse.Body)
-			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
 			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
 		}
 		resp.Diagnostics.AddError(
@@ -219,8 +219,8 @@ func (r resourceMapper) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 		}
 		log.Println(err.Error())
 		if httpResponse != nil {
-			body, _ := ioutil.ReadAll(httpResponse.Body)
-			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
 			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
 		}
 		resp.Diagnostics.AddError(
@@ -312,13 +312,13 @@ func (r resourceMapper) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 	} else {
 		mapper, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(mapperRequest).Execute()
 	}
+	if httpResponse != nil {
+		body, _ := io.ReadAll(httpResponse.Body)
+		payload, _ := io.ReadAll(httpResponse.Request.Body)
+		log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+	}
 	if err != nil {
 		log.Println(err.Error())
-		if httpResponse != nil {
-			body, _ := ioutil.ReadAll(httpResponse.Body)
-			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
-			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
-		}
 		resp.Diagnostics.AddError(
 			"Error updating mapper",
 			"Could not update mapper: "+err.Error(),
@@ -382,8 +382,8 @@ func (r resourceMapper) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 	if err != nil {
 		log.Println(err.Error())
 		if httpResponse != nil {
-			body, _ := ioutil.ReadAll(httpResponse.Body)
-			payload, _ := ioutil.ReadAll(httpResponse.Request.Body)
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
 			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
 		}
 		resp.Diagnostics.AddError(

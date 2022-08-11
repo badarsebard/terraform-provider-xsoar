@@ -81,13 +81,13 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 	} else {
 		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+config.Account.Value).SetIdentifier(config.Name.Value).Execute()
 	}
+	if httpResponse != nil {
+		getBody := httpResponse.Body
+		b, _ := io.ReadAll(getBody)
+		log.Println(string(b))
+	}
 	if err != nil {
 		log.Println(err.Error())
-		if httpResponse != nil {
-			getBody := httpResponse.Body
-			b, _ := io.ReadAll(getBody)
-			log.Println(string(b))
-		}
 		resp.Diagnostics.AddError(
 			"Error getting integration instance",
 			"Could not get integration instance: "+err.Error(),

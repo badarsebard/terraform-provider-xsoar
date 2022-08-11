@@ -79,13 +79,13 @@ func (r dataSourceMapper) Read(ctx context.Context, req tfsdk.ReadDataSourceRequ
 	} else {
 		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+config.Account.Value).SetIdentifier(config.Name.Value).Execute()
 	}
+	if httpResponse != nil {
+		getBody, _ := httpResponse.Request.GetBody()
+		b, _ := io.ReadAll(getBody)
+		log.Println(string(b))
+	}
 	if err != nil {
 		log.Println(err.Error())
-		if httpResponse != nil {
-			getBody, _ := httpResponse.Request.GetBody()
-			b, _ := io.ReadAll(getBody)
-			log.Println(string(b))
-		}
 		resp.Diagnostics.AddError(
 			"Error creating classifier",
 			"Could not create classifier: "+err.Error(),

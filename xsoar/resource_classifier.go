@@ -133,13 +133,13 @@ func (r resourceClassifier) Create(ctx context.Context, req tfsdk.CreateResource
 	} else {
 		classifier, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(classifierRequest).Execute()
 	}
+	if httpResponse != nil {
+		getBody, _ := httpResponse.Request.GetBody()
+		b, _ := io.ReadAll(getBody)
+		log.Println(string(b))
+	}
 	if err != nil {
 		log.Println(err.Error())
-		if httpResponse != nil {
-			getBody, _ := httpResponse.Request.GetBody()
-			b, _ := io.ReadAll(getBody)
-			log.Println(string(b))
-		}
 		resp.Diagnostics.AddError(
 			"Error creating classifier",
 			"Could not create classifier: "+err.Error(),

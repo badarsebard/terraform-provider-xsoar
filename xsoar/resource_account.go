@@ -127,18 +127,26 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		log.Printf("creating account")
 		var httpResponse *http.Response
 		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
+		var body []byte
 		if httpResponse != nil {
-			body, _ := io.ReadAll(httpResponse.Body)
+			body, _ = io.ReadAll(httpResponse.Body)
 			payload, _ := io.ReadAll(httpResponse.Request.Body)
 			log.Printf("%s : %s - %s\n", payload, httpResponse.Status, body)
 		}
 		if err != nil {
 			log.Println(err.Error())
 			time.Sleep(60 * time.Second)
-			return resource.RetryableError(fmt.Errorf("error creating instance: %s", err))
+			return resource.RetryableError(fmt.Errorf("error message: %s, http response: %s", err, body))
 		}
 		return nil
 	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating account",
+			"Could not create account: "+err.Error(),
+		)
+		return
+	}
 
 	// Map response body to resource schema attribute
 	var result Account
@@ -443,7 +451,7 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	}
 
 	var propagationLabels []attr.Value
-	if account["propagationLabels"] != nil {
+	if account["propagationLabels"] == nil {
 		propagationLabels = []attr.Value{}
 	} else {
 		for _, prop := range account["propagationLabels"].([]interface{}) {
@@ -574,17 +582,15 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 	}
 
 	var propagationLabels []attr.Value
-	if account["propagationLabels"] != nil {
+	if account["propagationLabels"] == nil {
 		propagationLabels = []attr.Value{}
 	} else {
-		if account["propagationLabels"] != nil {
-			for _, prop := range account["propagationLabels"].([]interface{}) {
-				propagationLabels = append(propagationLabels, types.String{
-					Unknown: false,
-					Null:    false,
-					Value:   prop.(string),
-				})
-			}
+		for _, prop := range account["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   prop.(string),
+			})
 		}
 	}
 

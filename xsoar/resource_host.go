@@ -143,6 +143,13 @@ func (r resourceHost) Create(ctx context.Context, req tfsdk.CreateResourceReques
 		}
 		return nil
 	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating host",
+			fmt.Sprintf("Error creating host: %s", err.Error()),
+		)
+		return
+	}
 	defer conn.Close()
 
 	// 2) query main server with /host/build
@@ -595,6 +602,13 @@ func (r resourceHost) Delete(ctx context.Context, req tfsdk.DeleteResourceReques
 		}
 		return nil
 	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting host",
+			"Could not delete host: "+err.Error(),
+		)
+		return
+	}
 	defer conn.Close()
 
 	// 2) query main server with /host/build
