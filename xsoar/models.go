@@ -12,6 +12,7 @@ type Account struct {
 	HostGroupId       types.String `tfsdk:"host_group_id"`
 	AccountRoles      types.Set    `tfsdk:"account_roles"`
 	PropagationLabels types.Set    `tfsdk:"propagation_labels"`
+	Timeout           types.Int64  `tfsdk:"timeout"`
 }
 
 // Accounts -
