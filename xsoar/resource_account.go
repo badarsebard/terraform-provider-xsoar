@@ -129,7 +129,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 	// Create new account
 	var accounts []map[string]interface{}
 	timeout := time.Duration(900)
-	if !plan.Timeout.Null {
+	if !plan.Timeout.Null && plan.Timeout.Value > 0 {
 		timeout = time.Duration(plan.Timeout.Value)
 	}
 	err = resource.RetryContext(ctx, timeout, func() *resource.RetryError {
