@@ -57,7 +57,6 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 			"timeout": {
 				Type:     types.Int64Type,
 				Optional: true,
-				Computed: true,
 			},
 		},
 	}, nil
@@ -128,9 +127,9 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 	// Create new account
 	var accounts []map[string]interface{}
-	timeout := time.Duration(900)
+	timeout := time.Duration(900) * time.Second
 	if !plan.Timeout.Null && plan.Timeout.Value > 0 {
-		timeout = time.Duration(plan.Timeout.Value)
+		timeout = time.Duration(plan.Timeout.Value) * time.Second
 	}
 	err = resource.RetryContext(ctx, timeout, func() *resource.RetryError {
 		log.Printf("creating account")
