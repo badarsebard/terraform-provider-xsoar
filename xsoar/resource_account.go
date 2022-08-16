@@ -54,6 +54,11 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				Type:     types.StringType,
 				Computed: true,
 			},
+			"timeout": {
+				Type:     types.Int64Type,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}, nil
 }
@@ -214,7 +219,8 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 					Elems:    roles,
 					ElemType: types.StringType,
 				},
-				Id: types.String{Value: account["id"].(string)},
+				Id:      types.String{Value: account["id"].(string)},
+				Timeout: plan.Timeout,
 			}
 			break
 		}
@@ -326,7 +332,8 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 			Elems:    roles,
 			ElemType: types.StringType,
 		},
-		Id: types.String{Value: account["id"].(string)},
+		Id:      types.String{Value: account["id"].(string)},
+		Timeout: state.Timeout,
 	}
 
 	// Set state
@@ -523,7 +530,8 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 			Elems:    roles,
 			ElemType: types.StringType,
 		},
-		Id: types.String{Value: account["id"].(string)},
+		Id:      types.String{Value: account["id"].(string)},
+		Timeout: plan.Timeout,
 	}
 
 	// Set state
@@ -653,7 +661,8 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 			Elems:    roles,
 			ElemType: types.StringType,
 		},
-		Id: types.String{Value: account["id"].(string)},
+		Id:      types.String{Value: account["id"].(string)},
+		Timeout: types.Int64{Value: 900},
 	}
 
 	// Set state
