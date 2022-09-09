@@ -149,8 +149,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		accounts, httpResponse, err = r.p.client.DefaultApi.ListAccounts(ctx).Execute()
 		if httpResponse != nil {
 			body, _ = io.ReadAll(httpResponse.Body)
-			payload, _ := io.ReadAll(httpResponse.Request.Body)
-			log.Printf("%s : %s - %s\n", payload, httpResponse.Status, body)
+			log.Printf("%s : %s\n", httpResponse.Status, body)
 		}
 		if err != nil {
 			return resource.RetryableError(fmt.Errorf("error message: %s, http response: %s", err, body))
