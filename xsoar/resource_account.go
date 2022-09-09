@@ -9,8 +9,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"hash/crc64"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -127,15 +129,42 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 
 	// Create new account
 	var accounts []map[string]interface{}
-	timeout := time.Duration(900) * time.Second
+	timeout := time.Duration(1800) * time.Second
 	if !plan.Timeout.Null && plan.Timeout.Value > 0 {
 		timeout = time.Duration(plan.Timeout.Value) * time.Second
 	}
 	err = resource.RetryContext(ctx, timeout, func() *resource.RetryError {
-		log.Printf("creating account")
 		var httpResponse *http.Response
-		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
 		var body []byte
+		// initial random delay
+		crcTable := crc64.MakeTable(crc64.ISO)
+		seedInt := int64(crc64.Checksum([]byte(plan.Name.Value), crcTable))
+		log.Printf("generated seed: %d\n", seedInt)
+		randSource := rand.NewSource(seedInt)
+		nrand := rand.New(randSource)
+		randomTimeToWait := nrand.Intn(90) + 1
+		log.Printf("sleeping for %d seconds\n", randomTimeToWait)
+		time.Sleep(time.Duration(randomTimeToWait) * time.Second)
+		// wait until no other accounts are being created
+		accounts, httpResponse, err = r.p.client.DefaultApi.ListAccounts(ctx).Execute()
+		if httpResponse != nil {
+			body, _ = io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("%s : %s - %s\n", payload, httpResponse.Status, body)
+		}
+		if err != nil {
+			return resource.RetryableError(fmt.Errorf("error message: %s, http response: %s", err, body))
+		}
+		for _, account := range accounts {
+			if account["status"].(string) == "" {
+				time.Sleep(60 * time.Second)
+				return resource.RetryableError(fmt.Errorf("waiting for account %s to finish creation", account["name"].(string)))
+			}
+		}
+		// Create account
+		log.Printf("creating account")
+
+		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
 		if httpResponse != nil {
 			body, _ = io.ReadAll(httpResponse.Body)
 			payload, _ := io.ReadAll(httpResponse.Request.Body)
