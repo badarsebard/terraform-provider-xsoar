@@ -392,47 +392,88 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 	// Generate API request body from plan
 	// This requires up to two requests: roles and propagation labels, and host migration
 	// RolesAndPropagationLabels
+	var err error
 	if !plan.AccountRoles.Null || !plan.PropagationLabels.Null {
 		updateRolesAndPropagationLabelsRequest := *openapi.NewUpdateRolesAndPropagationLabelsRequest()
 		var updateRolesAndPropagationLabels = false
 		if !plan.AccountRoles.Null && len(plan.AccountRoles.Elems) > 0 && !plan.AccountRoles.Equal(state.AccountRoles) {
 			var roles []string
 			for _, elem := range plan.AccountRoles.Elems {
-				var role interface{}
-				role, _ = elem.ToTerraformValue(ctx)
-				roles = append(roles, role.(string))
+				role, _ := elem.ToTerraformValue(ctx)
+				if role.IsKnown() && !role.IsNull() {
+					var roleToAppend string
+					err = role.As(&roleToAppend)
+					if err != nil {
+						resp.Diagnostics.AddError(
+							"Error converting role",
+							"Could not convert role to string: "+err.Error(),
+						)
+						return
+					}
+					roles = append(roles, roleToAppend)
+				}
 			}
 			updateRolesAndPropagationLabelsRequest.SetSelectedRoles(roles)
 			updateRolesAndPropagationLabels = true
 		} else {
 			var roles []string
 			for _, elem := range state.AccountRoles.Elems {
-				var role interface{}
-				role, _ = elem.ToTerraformValue(ctx)
-				roles = append(roles, role.(string))
+				role, _ := elem.ToTerraformValue(ctx)
+				if role.IsKnown() && !role.IsNull() {
+					var roleToAppend string
+					err = role.As(&roleToAppend)
+					if err != nil {
+						resp.Diagnostics.AddError(
+							"Error converting role",
+							"Could not convert role to string: "+err.Error(),
+						)
+						return
+					}
+					roles = append(roles, roleToAppend)
+				}
 			}
 			updateRolesAndPropagationLabelsRequest.SetSelectedRoles(roles)
 		}
 		if !plan.PropagationLabels.Null && len(plan.PropagationLabels.Elems) > 0 && !plan.PropagationLabels.Equal(state.PropagationLabels) {
 			var propagationLabels []string
 			for _, elem := range plan.PropagationLabels.Elems {
-				var label interface{}
-				label, _ = elem.ToTerraformValue(ctx)
-				propagationLabels = append(propagationLabels, label.(string))
+				label, _ := elem.ToTerraformValue(ctx)
+				if label.IsKnown() && !label.IsNull() {
+					var labelToAppend string
+					err = label.As(&labelToAppend)
+					if err != nil {
+						resp.Diagnostics.AddError(
+							"Error converting label",
+							"Could not convert label to string: "+err.Error(),
+						)
+						return
+					}
+					propagationLabels = append(propagationLabels, labelToAppend)
+				}
 			}
 			updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(propagationLabels)
 			updateRolesAndPropagationLabels = true
 		} else {
 			var propagationLabels []string
 			for _, elem := range state.PropagationLabels.Elems {
-				var label interface{}
-				label, _ = elem.ToTerraformValue(ctx)
-				propagationLabels = append(propagationLabels, label.(string))
+				label, _ := elem.ToTerraformValue(ctx)
+				if label.IsKnown() && !label.IsNull() {
+					var labelToAppend string
+					err = label.As(&labelToAppend)
+					if err != nil {
+						resp.Diagnostics.AddError(
+							"Error converting label",
+							"Could not convert label to string: "+err.Error(),
+						)
+						return
+					}
+					propagationLabels = append(propagationLabels, labelToAppend)
+				}
 			}
 			updateRolesAndPropagationLabelsRequest.SetSelectedPropagationLabels(propagationLabels)
 		}
 		if updateRolesAndPropagationLabels {
-			_, _, err := r.p.client.DefaultApi.UpdateAccount(ctx, plan.Name.Value).UpdateRolesAndPropagationLabelsRequest(updateRolesAndPropagationLabelsRequest).Execute()
+			_, _, err = r.p.client.DefaultApi.UpdateAccount(ctx, plan.Name.Value).UpdateRolesAndPropagationLabelsRequest(updateRolesAndPropagationLabelsRequest).Execute()
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"Error update account",
