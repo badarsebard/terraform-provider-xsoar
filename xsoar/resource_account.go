@@ -60,6 +60,10 @@ func (r resourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 				Type:     types.Int64Type,
 				Optional: true,
 			},
+			"concurrency_limit": {
+				Type:     types.Int64Type,
+				Optional: true,
+			},
 		},
 	}, nil
 }
@@ -154,8 +158,16 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		if err != nil {
 			return resource.RetryableError(fmt.Errorf("error message: %s, http response: %s", err, body))
 		}
+		var accountsBeingCreated int64 = 0
+		var concurrencyLimit int64 = 1
 		for _, account := range accounts {
 			if account["status"].(string) == "" {
+				accountsBeingCreated++
+			}
+			if !plan.Concurrency.Null {
+				concurrencyLimit = plan.Concurrency.Value
+			}
+			if accountsBeingCreated >= concurrencyLimit {
 				time.Sleep(60 * time.Second)
 				return resource.RetryableError(fmt.Errorf("waiting for account %s to finish creation", account["name"].(string)))
 			}
@@ -246,8 +258,9 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 					Elems:    roles,
 					ElemType: types.StringType,
 				},
-				Id:      types.String{Value: account["id"].(string)},
-				Timeout: plan.Timeout,
+				Id:          types.String{Value: account["id"].(string)},
+				Timeout:     plan.Timeout,
+				Concurrency: plan.Concurrency,
 			}
 			break
 		}
@@ -359,8 +372,9 @@ func (r resourceAccount) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 			Elems:    roles,
 			ElemType: types.StringType,
 		},
-		Id:      types.String{Value: account["id"].(string)},
-		Timeout: state.Timeout,
+		Id:          types.String{Value: account["id"].(string)},
+		Timeout:     state.Timeout,
+		Concurrency: state.Concurrency,
 	}
 
 	// Set state
@@ -598,8 +612,9 @@ func (r resourceAccount) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 			Elems:    roles,
 			ElemType: types.StringType,
 		},
-		Id:      types.String{Value: account["id"].(string)},
-		Timeout: plan.Timeout,
+		Id:          types.String{Value: account["id"].(string)},
+		Timeout:     plan.Timeout,
+		Concurrency: plan.Concurrency,
 	}
 
 	// Set state
@@ -729,8 +744,9 @@ func (r resourceAccount) ImportState(ctx context.Context, req tfsdk.ImportResour
 			Elems:    roles,
 			ElemType: types.StringType,
 		},
-		Id:      types.String{Value: account["id"].(string)},
-		Timeout: types.Int64{Value: 900},
+		Id:          types.String{Value: account["id"].(string)},
+		Timeout:     types.Int64{Value: 900},
+		Concurrency: types.Int64{Value: 1},
 	}
 
 	// Set state

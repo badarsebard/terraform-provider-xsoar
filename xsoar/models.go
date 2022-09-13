@@ -13,6 +13,7 @@ type Account struct {
 	AccountRoles      types.Set    `tfsdk:"account_roles"`
 	PropagationLabels types.Set    `tfsdk:"propagation_labels"`
 	Timeout           types.Int64  `tfsdk:"timeout"`
+	Concurrency       types.Int64  `tfsdk:"concurrency_limit"`
 }
 
 // Accounts -
