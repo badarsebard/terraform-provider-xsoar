@@ -175,7 +175,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		// Create account
 		log.Printf("creating account")
 
-		accounts, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
+		_, httpResponse, err = r.p.client.DefaultApi.CreateAccount(ctx).CreateAccountRequest(createAccountRequest).Execute()
 		if httpResponse != nil {
 			body, _ = io.ReadAll(httpResponse.Body)
 			payload, _ := io.ReadAll(httpResponse.Request.Body)
@@ -186,6 +186,7 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 			time.Sleep(60 * time.Second)
 			return resource.RetryableError(fmt.Errorf("error message: %s, http response: %s", err, body))
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -196,74 +197,88 @@ func (r resourceAccount) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 
+	var account map[string]interface{}
+	accName := "acc_" + plan.Name.Value
+	// Verify account created successfully
+	err = resource.RetryContext(ctx, timeout, func() *resource.RetryError {
+		account, _, err = r.p.client.DefaultApi.GetAccount(ctx, accName).Execute()
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error getting account",
+				"Could not read account "+accName+": "+err.Error(),
+			)
+		}
+		if account["status"].(string) == "" {
+			time.Sleep(60 * time.Second)
+			return resource.RetryableError(fmt.Errorf("waiting for account %s to finish creation", account["name"].(string)))
+		}
+
+		return nil
+	})
+
 	// Map response body to resource schema attribute
 	var result Account
-	for _, account := range accounts {
-		if account["displayName"].(string) == plan.Name.Value {
-			var propagationLabels []attr.Value
-			if account["propagationLabels"] == nil {
-				propagationLabels = []attr.Value{}
-			} else {
-				for _, label := range account["propagationLabels"].([]interface{}) {
-					propagationLabels = append(propagationLabels, types.String{
-						Unknown: false,
-						Null:    false,
-						Value:   label.(string),
-					})
-				}
-			}
+	var propagationLabels []attr.Value
+	if account["propagationLabels"] == nil {
+		propagationLabels = []attr.Value{}
+	} else {
+		for _, label := range account["propagationLabels"].([]interface{}) {
+			propagationLabels = append(propagationLabels, types.String{
+				Unknown: false,
+				Null:    false,
+				Value:   label.(string),
+			})
+		}
+	}
 
-			var hostGroupName string
-			for _, group := range haGroups {
-				hgi, ok := account["hostGroupId"].(string)
-				if ok && group["id"].(string) == hgi {
-					hostGroupName = group["name"].(string)
-					break
-				}
-			}
-
-			var roles []attr.Value
-			if account["roles"] == nil {
-				roles = []attr.Value{}
-			} else {
-				rolesMap := account["roles"].(map[string]interface{})
-				rolesMapRoles := rolesMap["roles"].([]interface{})
-				var role string
-				var ok bool
-				for _, roleInterface := range rolesMapRoles {
-					role, ok = roleInterface.(string)
-					if ok {
-						roles = append(roles, types.String{
-							Unknown: false,
-							Null:    false,
-							Value:   role,
-						})
-					}
-				}
-			}
-
-			result = Account{
-				Name:          types.String{Value: account["displayName"].(string)},
-				HostGroupName: types.String{Value: hostGroupName},
-				HostGroupId:   types.String{Value: hostGroupId},
-				PropagationLabels: types.Set{
-					Unknown:  false,
-					Null:     false,
-					Elems:    propagationLabels,
-					ElemType: types.StringType,
-				},
-				AccountRoles: types.Set{
-					Unknown:  false,
-					Null:     false,
-					Elems:    roles,
-					ElemType: types.StringType,
-				},
-				Id:          types.String{Value: account["id"].(string)},
-				Timeout:     plan.Timeout,
-				Concurrency: plan.Concurrency,
-			}
+	var hostGroupName string
+	for _, group := range haGroups {
+		hgi, ok := account["hostGroupId"].(string)
+		if ok && group["id"].(string) == hgi {
+			hostGroupName = group["name"].(string)
 			break
 		}
+	}
+
+	var roles []attr.Value
+	if account["roles"] == nil {
+		roles = []attr.Value{}
+	} else {
+		rolesMap := account["roles"].(map[string]interface{})
+		rolesMapRoles := rolesMap["roles"].([]interface{})
+		var role string
+		var ok bool
+		for _, roleInterface := range rolesMapRoles {
+			role, ok = roleInterface.(string)
+			if ok {
+				roles = append(roles, types.String{
+					Unknown: false,
+					Null:    false,
+					Value:   role,
+				})
+			}
+		}
+	}
+
+	result = Account{
+		Name:          types.String{Value: account["displayName"].(string)},
+		HostGroupName: types.String{Value: hostGroupName},
+		HostGroupId:   types.String{Value: hostGroupId},
+		PropagationLabels: types.Set{
+			Unknown:  false,
+			Null:     false,
+			Elems:    propagationLabels,
+			ElemType: types.StringType,
+		},
+		AccountRoles: types.Set{
+			Unknown:  false,
+			Null:     false,
+			Elems:    roles,
+			ElemType: types.StringType,
+		},
+		Id:          types.String{Value: account["id"].(string)},
+		Timeout:     plan.Timeout,
+		Concurrency: plan.Concurrency,
 	}
 
 	// Generate resource state struct
