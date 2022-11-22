@@ -2,14 +2,17 @@ package xsoar
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type resourceIntegrationInstanceType struct{}
@@ -170,17 +173,26 @@ func (r resourceIntegrationInstance) Create(ctx context.Context, req tfsdk.Creat
 
 	var integration map[string]interface{}
 	var httpResponse *http.Response
-	if plan.Account.Null || len(plan.Account.Value) == 0 {
-		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
-	} else {
-		integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
-	}
-	if httpResponse != nil {
-		body, _ := io.ReadAll(httpResponse.Body)
-		log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
-	}
+	var body []byte
+	err = resource.RetryContext(ctx, 10*time.Minute, func() *resource.RetryError {
+		if plan.Account.Null || len(plan.Account.Value) == 0 {
+			integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstance(ctx).CreateIntegrationRequest(moduleInstance).Execute()
+		} else {
+			integration, httpResponse, err = r.p.client.DefaultApi.CreateUpdateIntegrationInstanceAccount(ctx, "acc_"+plan.Account.Value).CreateIntegrationRequest(moduleInstance).Execute()
+		}
+		if httpResponse != nil {
+			body, _ = io.ReadAll(httpResponse.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body))
+		}
+		if err != nil {
+			log.Println(err.Error())
+			time.Sleep(60 * time.Second)
+			return resource.RetryableError(fmt.Errorf("error message: %s, http response: %s", err, body))
+		}
+
+		return nil
+	})
 	if err != nil {
-		log.Println(err.Error())
 		resp.Diagnostics.AddError(
 			"Error creating integration instance",
 			"Could not create integration instance: "+err.Error(),
