@@ -43,7 +43,7 @@ func (r dataSourceClassifierType) GetSchema(_ context.Context) (tfsdk.Schema, di
 				Optional: false,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},
@@ -84,10 +84,13 @@ func (r dataSourceClassifier) Read(ctx context.Context, req tfsdk.ReadDataSource
 	} else {
 		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+config.Account.Value).SetIdentifier(config.Name.Value).Execute()
 	}
-	if err != nil {
+	if httpResponse != nil {
 		getBody, _ := httpResponse.Request.GetBody()
 		b, _ := io.ReadAll(getBody)
 		log.Println(string(b))
+	}
+	if err != nil {
+		log.Println(err.Error())
 		resp.Diagnostics.AddError(
 			"Error getting classifier",
 			"Could not get classifier: "+err.Error(),
@@ -128,7 +131,7 @@ func (r dataSourceClassifier) Read(ctx context.Context, req tfsdk.ReadDataSource
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           config.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {
@@ -148,7 +151,7 @@ func (r dataSourceClassifier) Read(ctx context.Context, req tfsdk.ReadDataSource
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, &config)
+	diags = resp.State.Set(ctx, result)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

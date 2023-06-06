@@ -14,14 +14,14 @@ func (r dataSourceAccountsType) GetSchema(_ context.Context) (tfsdk.Schema, diag
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"accounts": {
-				Type: types.ListType{
+				Type: types.SetType{
 					ElemType: types.ObjectType{
 						AttrTypes: map[string]attr.Type{
 							"name":               types.StringType,
 							"host_group_name":    types.StringType,
 							"host_group_id":      types.StringType,
-							"account_roles":      types.ListType{ElemType: types.StringType},
-							"propagation_labels": types.ListType{ElemType: types.StringType},
+							"account_roles":      types.SetType{ElemType: types.StringType},
+							"propagation_labels": types.SetType{ElemType: types.StringType},
 							"id":                 types.StringType,
 						},
 					},
@@ -77,7 +77,7 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 		return
 	}
 
-	var accountsAccounts = types.List{
+	var accountsAccounts = types.Set{
 		Unknown: false,
 		Null:    false,
 		Elems:   nil,
@@ -86,8 +86,8 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				"name":               types.StringType,
 				"host_group_name":    types.StringType,
 				"host_group_id":      types.StringType,
-				"account_roles":      types.ListType{ElemType: types.StringType},
-				"propagation_labels": types.ListType{ElemType: types.StringType},
+				"account_roles":      types.SetType{ElemType: types.StringType},
+				"propagation_labels": types.SetType{ElemType: types.StringType},
 				"id":                 types.StringType,
 			},
 		},
@@ -109,8 +109,8 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				"name":               types.StringType,
 				"host_group_name":    types.StringType,
 				"host_group_id":      types.StringType,
-				"account_roles":      types.ListType{ElemType: types.StringType},
-				"propagation_labels": types.ListType{ElemType: types.StringType},
+				"account_roles":      types.SetType{ElemType: types.StringType},
+				"propagation_labels": types.SetType{ElemType: types.StringType},
 				"id":                 types.StringType,
 			},
 		}
@@ -148,7 +148,7 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				})
 			}
 		}
-		accountObject.Attrs["propagation_labels"] = types.List{
+		accountObject.Attrs["propagation_labels"] = types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    propagationLabels,
@@ -169,7 +169,7 @@ func (r dataSourceAccounts) Read(ctx context.Context, req tfsdk.ReadDataSourceRe
 				}
 			}
 		}
-		accountObject.Attrs["account_roles"] = types.List{
+		accountObject.Attrs["account_roles"] = types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    roles,

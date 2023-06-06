@@ -3,7 +3,7 @@ HOSTNAME=local
 NAMESPACE=badarsebard
 NAME=xsoar
 BINARY=terraform-provider-${NAME}
-VERSION=0.3.22
+VERSION=0.3.62
 OS=${MY_OS}
 ARCH=${MY_ARCH}
 
@@ -30,8 +30,6 @@ release:
 install: build
 	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS}_${ARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS}_${ARCH}
-	# rm -rf local/.terraform.lock.hcl local/.terraform/
-	# terraform -chdir=local init
 
 clean: install
 	rm -rf local/*.tfstate*

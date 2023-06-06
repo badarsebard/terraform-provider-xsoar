@@ -65,7 +65,7 @@ func (r resourceMapperType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Dia
 				Computed: true,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Optional: true,
 				Computed: true,
 			},
@@ -142,12 +142,15 @@ func (r resourceMapper) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		mapper, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(mapperRequest).Execute()
 	}
 	if err != nil {
-		getBody := httpResponse.Body
-		b, _ := io.ReadAll(getBody)
-		fmt.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error creating mapper",
-			"Could not create mapper: "+err.Error()+" "+string(b),
+			"Could not create mapper: "+err.Error(),
 		)
 		return
 	}
@@ -169,7 +172,7 @@ func (r resourceMapper) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 		Direction:         plan.Direction,
 	}
@@ -202,14 +205,24 @@ func (r resourceMapper) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	var httpResponse *http.Response
 	var err error
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Id.Value).Execute()
+		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Name.Value).Execute()
 	} else {
-		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Id.Value).Execute()
+		mapper, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Name.Value).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		// determine if the error is a not found error or not
+		if _, ok := err.(openapi.GenericOpenAPIError); ok {
+			log.Println("Mapper not found")
+			// Remove resource from state
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error creating classifier",
 			"Could not create classifier: "+err.Error(),
@@ -233,7 +246,7 @@ func (r resourceMapper) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           state.Account,
 		Direction:         state.Direction,
 	}
@@ -299,10 +312,13 @@ func (r resourceMapper) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 	} else {
 		mapper, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(mapperRequest).Execute()
 	}
+	if httpResponse != nil {
+		body, _ := io.ReadAll(httpResponse.Body)
+		payload, _ := io.ReadAll(httpResponse.Request.Body)
+		log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
 		resp.Diagnostics.AddError(
 			"Error updating mapper",
 			"Could not update mapper: "+err.Error(),
@@ -327,7 +343,7 @@ func (r resourceMapper) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 		Direction:         plan.Direction,
 	}
@@ -364,9 +380,12 @@ func (r resourceMapper) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 		httpResponse, err = r.p.client.DefaultApi.DeleteClassifierAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
 	}
 	if err != nil {
-		getBody := httpResponse.Body
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			body, _ := io.ReadAll(httpResponse.Body)
+			payload, _ := io.ReadAll(httpResponse.Request.Body)
+			log.Printf("code: %d status: %s headers: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, httpResponse.Header, string(body), string(payload))
+		}
 		resp.Diagnostics.AddError(
 			"Error deleting mapper",
 			"Could not delete mapper: "+err.Error(),
@@ -425,7 +444,7 @@ func (r resourceMapper) ImportState(ctx context.Context, req tfsdk.ImportResourc
 	result := Mapper{
 		Name:              types.String{Value: mapper.GetName()},
 		Id:                types.String{Value: mapper.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Direction:         types.String{Value: direction},
 	}
 	if m := string(mapping); m == "null" {

@@ -16,7 +16,7 @@ provider "xsoar" {
 resource "xsoar_ha_group" "ha1" {
   name                 = "ha_1"
   elastic_index_prefix = "ha_1_"
-  elasticsearch_url    = "http://elastic.example.com:9200"
+  elasticsearch_url    = "https://elastic.example.com:9200"
 }
 
 resource "xsoar_host" "host1" {

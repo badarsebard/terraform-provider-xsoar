@@ -32,7 +32,7 @@ func (r dataSourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.S
 				Optional: false,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},
@@ -50,7 +50,7 @@ func (r dataSourceIntegrationInstanceType) GetSchema(_ context.Context) (tfsdk.S
 				Optional: true,
 				Computed: true,
 			},
-			"classifier_id": {
+			"mapping_id": {
 				Type:     types.StringType,
 				Optional: true,
 				Computed: true,
@@ -87,10 +87,13 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 	} else {
 		integration, httpResponse, err = r.p.client.DefaultApi.GetIntegrationInstanceAccount(ctx, "acc_"+config.Account.Value).SetIdentifier(config.Name.Value).Execute()
 	}
-	if err != nil {
+	if httpResponse != nil {
 		getBody := httpResponse.Body
 		b, _ := io.ReadAll(getBody)
 		log.Println(string(b))
+	}
+	if err != nil {
+		log.Println(err.Error())
 		resp.Diagnostics.AddError(
 			"Error getting integration instance",
 			"Could not get integration instance: "+err.Error(),
@@ -135,10 +138,10 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 
 					nameconf, ok := integrationConfig["name"].(string)
 					if ok {
-						integrationConfigs[nameconf] = valueattr.(attr.Value)	
+						integrationConfigs[nameconf] = valueattr.(attr.Value)
 					} else {
 						break
-					}							
+					}
 				}
 		}
 	}
@@ -149,7 +152,7 @@ func (r dataSourceIntegrationInstance) Read(ctx context.Context, req tfsdk.ReadD
 		Id:                types.String{Value: integration["id"].(string)},
 		IntegrationName:   types.String{Value: integration["brand"].(string)},
 		Account:           config.Account,
-		PropagationLabels: types.List{Elems: propagationLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propagationLabels, ElemType: types.StringType},
 		Config:            types.Map{Elems: integrationConfigs, ElemType: types.StringType},
 	}
 

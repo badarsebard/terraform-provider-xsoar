@@ -41,7 +41,7 @@ func testAccCheckAccountDataSourceDestroy(r string) resource.TestCheckFunc {
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ID is set")
+			return fmt.Errorf("no ID is set")
 		}
 
 		resp, _, err := openapiClient.DefaultApi.GetAccount(context.Background(), "acc_"+r).Execute()

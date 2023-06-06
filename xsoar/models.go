@@ -10,13 +10,15 @@ type Account struct {
 	Id                types.String `tfsdk:"id"`
 	HostGroupName     types.String `tfsdk:"host_group_name"`
 	HostGroupId       types.String `tfsdk:"host_group_id"`
-	AccountRoles      types.List   `tfsdk:"account_roles"`
-	PropagationLabels types.List   `tfsdk:"propagation_labels"`
+	AccountRoles      types.Set    `tfsdk:"account_roles"`
+	PropagationLabels types.Set    `tfsdk:"propagation_labels"`
+	Timeout           types.Int64  `tfsdk:"timeout"`
+	Concurrency       types.Int64  `tfsdk:"concurrency_limit"`
 }
 
 // Accounts -
 type Accounts struct {
-	Accounts types.List `tfsdk:"accounts"`
+	Accounts types.Set `tfsdk:"accounts"`
 }
 
 // HAGroup -
@@ -25,15 +27,15 @@ type HAGroup struct {
 	Id                 types.String `tfsdk:"id"`
 	ElasticsearchUrl   types.String `tfsdk:"elasticsearch_url"`
 	ElasticIndexPrefix types.String `tfsdk:"elastic_index_prefix"`
-	AccountIds         types.List   `tfsdk:"account_ids"`
-	HostIds            types.List   `tfsdk:"host_ids"`
+	AccountIds         types.Set    `tfsdk:"account_ids"`
+	HostIds            types.Set    `tfsdk:"host_ids"`
 }
 
 // HAGroups -
 type HAGroups struct {
 	Name        types.String `tfsdk:"name"`
 	MaxAccounts types.Int64  `tfsdk:"max_accounts"`
-	Groups      types.List   `tfsdk:"groups"`
+	Groups      types.Set    `tfsdk:"groups"`
 }
 
 // Host -
@@ -56,10 +58,10 @@ type IntegrationInstance struct {
 	Id                types.String `tfsdk:"id"`
 	IntegrationName   types.String `tfsdk:"integration_name"`
 	Config            types.Map    `tfsdk:"config"`
-	PropagationLabels types.List   `tfsdk:"propagation_labels"`
+	PropagationLabels types.Set    `tfsdk:"propagation_labels"`
 	Account           types.String `tfsdk:"account"`
 	IncomingMapperId  types.String `tfsdk:"incoming_mapper_id"`
-	MappingId  		  types.String `tfsdk:"classifier_id"`
+	MappingId         types.String `tfsdk:"mapping_id"`
 }
 
 // Classifier -
@@ -69,7 +71,7 @@ type Classifier struct {
 	DefaultIncidentType types.String `tfsdk:"default_incident_type"`
 	KeyTypeMap          types.String `tfsdk:"key_type_map"`
 	Transformer         types.String `tfsdk:"transformer"`
-	PropagationLabels   types.List   `tfsdk:"propagation_labels"`
+	PropagationLabels   types.Set    `tfsdk:"propagation_labels"`
 	Account             types.String `tfsdk:"account"`
 }
 
@@ -78,7 +80,7 @@ type Mapper struct {
 	Name              types.String `tfsdk:"name"`
 	Id                types.String `tfsdk:"id"`
 	Mapping           types.String `tfsdk:"mapping"`
-	PropagationLabels types.List   `tfsdk:"propagation_labels"`
+	PropagationLabels types.Set    `tfsdk:"propagation_labels"`
 	Account           types.String `tfsdk:"account"`
 	Direction         types.String `tfsdk:"direction"`
 }

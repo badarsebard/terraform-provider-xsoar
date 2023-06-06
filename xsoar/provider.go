@@ -13,8 +13,10 @@ import (
 
 var _ = os.Stderr
 
-func New() tfsdk.Provider {
-	return &provider{}
+func New() func() tfsdk.Provider {
+	return func() tfsdk.Provider {
+		return &provider{}
+	}
 }
 
 type provider struct {
@@ -23,7 +25,6 @@ type provider struct {
 	data       *providerData
 }
 
-// GetSchema
 func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{

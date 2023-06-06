@@ -47,7 +47,7 @@ func (r resourceClassifierType) GetSchema(_ context.Context) (tfsdk.Schema, diag
 				Computed: true,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Optional: true,
 				Computed: true,
 			},
@@ -133,10 +133,13 @@ func (r resourceClassifier) Create(ctx context.Context, req tfsdk.CreateResource
 	} else {
 		classifier, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(classifierRequest).Execute()
 	}
-	if err != nil {
+	if httpResponse != nil {
 		getBody, _ := httpResponse.Request.GetBody()
 		b, _ := io.ReadAll(getBody)
 		log.Println(string(b))
+	}
+	if err != nil {
+		log.Println(err.Error())
 		resp.Diagnostics.AddError(
 			"Error creating classifier",
 			"Could not create classifier: "+err.Error(),
@@ -177,7 +180,7 @@ func (r resourceClassifier) Create(ctx context.Context, req tfsdk.CreateResource
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {
@@ -219,14 +222,24 @@ func (r resourceClassifier) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	var httpResponse *http.Response
 	var err error
 	if state.Account.Null || len(state.Account.Value) == 0 {
-		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Id.Value).Execute()
+		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifier(ctx).SetIdentifier(state.Name.Value).Execute()
 	} else {
-		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Id.Value).Execute()
+		classifier, httpResponse, err = r.p.client.DefaultApi.GetClassifierAccount(ctx, "acc_"+state.Account.Value).SetIdentifier(state.Name.Value).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		// determine if the error is a not found error or not
+		if _, ok := err.(openapi.GenericOpenAPIError); ok {
+			log.Println("Classifier not found")
+			// Remove resource from state
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		log.Println(err.Error())
+		if httpResponse != nil {
+			getBody, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error getting classifier",
 			"Could not get classifier: "+err.Error(),
@@ -267,7 +280,7 @@ func (r resourceClassifier) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           state.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {
@@ -358,9 +371,12 @@ func (r resourceClassifier) Update(ctx context.Context, req tfsdk.UpdateResource
 		classifier, httpResponse, err = r.p.client.DefaultApi.CreateUpdateClassifierAccount(ctx, "acc_"+plan.Account.Value).CreateUpdateClassifierAccountRequest(classifierRequest).Execute()
 	}
 	if err != nil {
-		getBody, _ := httpResponse.Request.GetBody()
-		b, _ := io.ReadAll(getBody)
-		log.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			getBody, _ := httpResponse.Request.GetBody()
+			b, _ := io.ReadAll(getBody)
+			log.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error updating classifier",
 			"Could not update classifier: "+err.Error(),
@@ -401,7 +417,7 @@ func (r resourceClassifier) Update(ctx context.Context, req tfsdk.UpdateResource
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 		Account:           plan.Account,
 	}
 	if v := string(defaultIncidentType); v == "null" {
@@ -447,9 +463,12 @@ func (r resourceClassifier) Delete(ctx context.Context, req tfsdk.DeleteResource
 		httpResponse, err = r.p.client.DefaultApi.DeleteClassifierAccount(ctx, state.Id.Value, "acc_"+state.Account.Value).Execute()
 	}
 	if err != nil {
-		getBody := httpResponse.Body
-		b, _ := io.ReadAll(getBody)
-		fmt.Println(string(b))
+		log.Println(err.Error())
+		if httpResponse != nil {
+			getBody := httpResponse.Body
+			b, _ := io.ReadAll(getBody)
+			fmt.Println(string(b))
+		}
 		resp.Diagnostics.AddError(
 			"Error deleting mapper",
 			"Could not delete mapper: "+err.Error(),
@@ -514,7 +533,7 @@ func (r resourceClassifier) ImportState(ctx context.Context, req tfsdk.ImportRes
 	result := Classifier{
 		Name:              types.String{Value: classifier.GetName()},
 		Id:                types.String{Value: classifier.GetId()},
-		PropagationLabels: types.List{Elems: propLabels, ElemType: types.StringType},
+		PropagationLabels: types.Set{Elems: propLabels, ElemType: types.StringType},
 	}
 	if len(accname) == 1 {
 		result.Account = types.String{Null: true}

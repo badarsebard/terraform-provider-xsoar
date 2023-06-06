@@ -29,11 +29,11 @@ func (r dataSourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 				Computed: true,
 			},
 			"account_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 			"host_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 		},
@@ -90,17 +90,17 @@ func (r dataSourceHAGroup) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    nil,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    nil,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 

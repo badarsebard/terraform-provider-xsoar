@@ -38,11 +38,11 @@ func (r resourceHAGroupType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 			},
 			// todo: add missing ES parameters
 			"account_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 			"host_ids": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 			},
 		},
@@ -94,15 +94,14 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 
-	// todo: trigger the host installer build
 	haGroup, httpResponse, err := r.p.client.DefaultApi.GetHAGroup(ctx, haGroup.GetId()).Execute()
+	if httpResponse != nil {
+		body, _ := io.ReadAll(httpResponse.Body)
+		payload, _ := io.ReadAll(httpResponse.Request.Body)
+		log.Printf("code: %d status: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body), string(payload))
+	}
 	if err != nil {
-		body, bodyErr := io.ReadAll(httpResponse.Body)
-		if bodyErr != nil {
-			log.Println("error reading body: " + bodyErr.Error())
-			return
-		}
-		log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+		log.Println(err.Error())
 		resp.Diagnostics.AddError(
 			"Error getting HA group",
 			"Could not get HA group: "+err.Error(),
@@ -110,13 +109,13 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		return
 	}
 	_, httpResponse, err = r.p.client.DefaultApi.CreateHAInstaller(ctx, haGroup.GetId()).Execute()
+	if httpResponse != nil {
+		body, _ := io.ReadAll(httpResponse.Body)
+		payload, _ := io.ReadAll(httpResponse.Request.Body)
+		log.Printf("code: %d status: %s body: %s payload: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body), string(payload))
+	}
 	if err != nil {
-		body, bodyErr := io.ReadAll(httpResponse.Body)
-		if bodyErr != nil {
-			log.Println("error reading body: " + bodyErr.Error())
-			return
-		}
-		log.Printf("code: %d status: %s body: %s\n", httpResponse.StatusCode, httpResponse.Status, string(body))
+		log.Println(err.Error())
 		resp.Diagnostics.AddError(
 			"Error creating HA installer",
 			"Could not create HA installer: "+err.Error(),
@@ -140,15 +139,15 @@ func (r resourceHAGroup) Create(ctx context.Context, req tfsdk.CreateResourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 
@@ -206,12 +205,12 @@ func (r resourceHAGroup) Read(ctx context.Context, req tfsdk.ReadResourceRequest
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
@@ -284,15 +283,15 @@ func (r resourceHAGroup) Update(ctx context.Context, req tfsdk.UpdateResourceReq
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 
@@ -386,15 +385,15 @@ func (r resourceHAGroup) ImportState(ctx context.Context, req tfsdk.ImportResour
 		Id:                 types.String{Value: haGroup.GetId()},
 		ElasticsearchUrl:   types.String{Value: haGroup.GetElasticsearchAddress()},
 		ElasticIndexPrefix: types.String{Value: haGroup.GetElasticIndexPrefix()},
-		AccountIds: types.List{
+		AccountIds: types.Set{
 			Unknown:  false,
 			Null:     true,
 			ElemType: types.StringType,
 		},
-		HostIds: types.List{
+		HostIds: types.Set{
 			Unknown:  false,
 			Null:     true,
-			ElemType: nil,
+			ElemType: types.StringType,
 		},
 	}
 

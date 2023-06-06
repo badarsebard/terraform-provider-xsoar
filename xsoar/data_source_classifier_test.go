@@ -41,7 +41,7 @@ func testAccCheckClassifierDataSourceDestroy(r string) resource.TestCheckFunc {
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ID is set")
+			return fmt.Errorf("no ID is set")
 		}
 
 		_, _, err := openapiClient.DefaultApi.GetClassifier(context.Background()).SetIdentifier(r).Execute()

@@ -28,12 +28,12 @@ func (r dataSourceAccountType) GetSchema(_ context.Context) (tfsdk.Schema, diag.
 				Optional: false,
 			},
 			"account_roles": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},
 			"propagation_labels": {
-				Type:     types.ListType{ElemType: types.StringType},
+				Type:     types.SetType{ElemType: types.StringType},
 				Computed: true,
 				Optional: false,
 			},
@@ -134,13 +134,13 @@ func (r dataSourceAccount) Read(ctx context.Context, req tfsdk.ReadDataSourceReq
 		Name:          types.String{Value: account["displayName"].(string)},
 		HostGroupName: types.String{Value: hostGroupName},
 		HostGroupId:   types.String{Value: account["hostGroupId"].(string)},
-		PropagationLabels: types.List{
+		PropagationLabels: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    propagationLabels,
 			ElemType: types.StringType,
 		},
-		AccountRoles: types.List{
+		AccountRoles: types.Set{
 			Unknown:  false,
 			Null:     false,
 			Elems:    propagationLabels,
