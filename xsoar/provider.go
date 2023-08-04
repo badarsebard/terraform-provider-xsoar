@@ -40,15 +40,20 @@ func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics)
 				Type:     types.BoolType,
 				Optional: true,
 			},
+			"http_headers_from_env": {
+				Type:     types.MapType{ElemType: types.StringType},
+				Optional: true,
+			},
 		},
 	}, nil
 }
 
 // Provider schema struct
 type providerData struct {
-	Apikey   types.String `tfsdk:"api_key"`
-	MainHost types.String `tfsdk:"main_host"`
-	Insecure types.Bool   `tfsdk:"insecure"`
+	Apikey             types.String      `tfsdk:"api_key"`
+	MainHost           types.String      `tfsdk:"main_host"`
+	Insecure           types.Bool        `tfsdk:"insecure"`
+	HttpHeadersFromEnv map[string]string `tfsdk:"http_headers_from_env"`
 }
 
 func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
@@ -130,6 +135,11 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	openapiConfig.Servers[0].URL = mainhost
 	openapiConfig.AddDefaultHeader("Authorization", apikey)
 	openapiConfig.AddDefaultHeader("Accept", "application/json,*/*")
+	if config.HttpHeadersFromEnv != nil {
+		for key, value := range config.HttpHeadersFromEnv {
+			openapiConfig.AddDefaultHeader(key, os.Getenv(value))
+		}
+	}
 	if insecure {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
